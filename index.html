@@ -20,17 +20,17 @@
 
     <script>
         const canvas = document.getElementById('Canvas');
-        const outputCtx = canvas.getContext('2d');
+        const ctx = canvas.getContext('2d');
 
         const radius = 2.6;
         const baseInfectionDistance = 12;
-        const baseInfectionDelay = 2500;
+        const baseInfectionDelay = 10000;
         const smallClusterRange = 10;
-        const cureChance = 0.02;
-        const deathChance = 0.01;
-        const cureDelay = 80000;
-        const deathDelay = 80000;
-        const checkInterval = 1000;
+        const cureChance = 0.01;
+        const deathChance = 0.005;
+        const cureDelay = 45000;
+        const deathDelay = 35000;
+        const checkInterval = 200;
 
         const healthyCountElement = document.getElementById('healthyCount');
         const infectedCountElement = document.getElementById('infectedCount');
@@ -45,15 +45,15 @@
         };
 
         function drawCircles() {
-            outputCtx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
             circles.forEach(circle => {
                 const circleState = states[circle.state];
-                outputCtx.fillStyle = circleState ? circleState.color : states.normal.color;
-                outputCtx.beginPath();
-                outputCtx.arc(circle.x, circle.y, radius, 0, Math.PI * 2);
-                outputCtx.fill();
-                outputCtx.closePath();
+                ctx.fillStyle = circleState ? circleState.color : states.normal.color;
+                ctx.beginPath();
+                ctx.arc(circle.x, circle.y, radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.closePath();
             });
 
             updateConsole();
