@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Canvas com Círculos e Imagem</title>
+    <style>
+        canvas {
+            border: 1px solid black;
+            margin-top: 20px;
+        }
+        #backgroundImage {
+            position: absolute;
+            top: 1;
+            left: 1;
+            z-index: 0; /* Para que a imagem fique abaixo do canvas */
+        }
+        #outputCanvas {
+            background-color: black;
+        }
+    </style>
+</head>
+<body>
+    <img id="backgroundImage" src="./PixelWorld.jpg" alt="Imagem de Fundo" width="1024" height="580" style="display:none;">
+    <canvas id="myCanvas" width="1024" height="580"></canvas>
+    <canvas id="outputCanvas" width="1024" height="580"></canvas>
+    
+    <script>
+        const canvas = document.getElementById('myCanvas');
+        const ctx = canvas.getContext('2d');
+        const outputCanvas = document.getElementById('outputCanvas');
+        const outputCtx = outputCanvas.getContext('2d');
+        const Circles = [];
+
+        // Carrega a imagem
+        const img = document.getElementById('backgroundImage');
+        img.onload = function() {
+            ctx.drawImage(img, 0, 0);
+            analyzeImage();
+        };
+        
+        // Função para analisar a imagem e guardar as coordenadas dos círculos
+        function analyzeImage() {
+            const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imageData.data;
+
+            const radius = 2; // Raio do círculo ajustado para 2
+            const diameter = radius * 2; // Diâmetro do círculo
+            const colorThreshold = 200; // Limite de cor para identificar círculos brancos
+            const gridSpacing = 6; // Espaçamento da grelha
+
+            const visited = new Set(); // Conjunto para rastrear pixels já analisados
+
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const index = (y * canvas.width + x) * 4;
+                    const r = data[index];
+                    const g = data[index + 1];
+                    const b = data[index + 2];
+
+                    // Verifica se o pixel é branco (ou quase branco) e se já não foi visitado
+                    if (r > colorThreshold && g > colorThreshold && b > colorThreshold && !visited.has(`${x},${y}`)) {
+                        // Alinha a posição (x, y) à grelha mais próxima
+                        const alignedX = Math.round(x / gridSpacing) * gridSpacing;
+                        const alignedY = Math.round(y / gridSpacing) * gridSpacing;
+
+                        // Verifica se há círculos próximos para evitar sobreposição
+                        if (Circles.every(circle => {
+                            const dx = alignedX - circle.x;
+                            const dy = alignedY - circle.y;
+                            return Math.sqrt(dx * dx + dy * dy) >= diameter;
+                        })) {
+                            // Armazena o círculo com coordenadas alinhadas
+                            Circles.push({ x: alignedX, y: alignedY, cor: "white" });
+
+                            // Marca os pixels no raio do círculo como visitados
+                            for (let dy = -radius; dy <= radius; dy++) {
+                                for (let dx = -radius; dx <= radius; dx++) {
+                                    if (dx * dx + dy * dy <= radius * radius) { // Dentro do círculo
+                                        visited.add(`${alignedX + dx},${alignedY + dy}`);
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Printa todos os círculos encontrados no formato de lista para ser copiado
+            console.log("Coordenadas dos Círculos:");
+            console.log(JSON.stringify(Circles));
+
+            drawCirclesOnOutputCanvas();
+        }
+
+        // Função para desenhar os círculos no segundo canvas
+        function drawCirclesOnOutputCanvas() {
+            outputCtx.clearRect(0, 0, outputCanvas.width, outputCanvas.height); // Limpa o canvas de saída
+
+            Circles.forEach(circle => {
+                outputCtx.fillStyle = circle.cor;
+                outputCtx.strokeStyle = "red";
+                outputCtx.beginPath();
+                outputCtx.arc(circle.x, circle.y, 2, 0, Math.PI * 2); // Círculo com raio ajustado para 2
+                outputCtx.fill();
+                //outputCtx.stroke();
+                outputCtx.closePath();
+            });
+        }
+    </script>
+</body>
+</html>
