@@ -1,30 +1,48 @@
 <!DOCTYPE html>
 <html lang="pt">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa Mundial</title>
     <link rel="stylesheet" href="style.css">
+    <!-- Font Awesome para ícones -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 
 <body>
-    <div id="console">
-        <div id="healthyCount">Pessoas Saudáveis: 100%</div>
-        <div id="infectedCount">Pessoas Infetadas: 0%</div>
-        <div id="deadCount">Pessoas Mortas: 0%</div>
-        <div id="curedCount">Pessoas Curadas: 0%</div>
+
+    <!-- Slide Menu -->
+    <div id="slideMenu" class="slide-menu">
+        <div id="console">
+            <h2>Informações</h2>
+            <div id="healthyCount">Pessoas Saudáveis: 100%</div>
+            <div id="infectedCount">Pessoas Infetadas: 0%</div>
+            <div id="deadCount">Pessoas Mortas: 0%</div>
+            <div id="curedCount">Pessoas Curadas: 0%</div>
+        </div>
     </div>
+
+    <!-- Button to Open Slide Menu -->
+    <div id="menuButton" class="menu-button">
+        <button onclick="toggleMenu()">
+            <i id="menuIcon" class="fas fa-bars"></i>&nbsp&nbspMenu <!-- Ícone do menu com texto -->
+        </button>
+    </div>
+
+    <!-- Timer -->
+    <div id="timer"></div>
+
     <canvas id="Canvas" width="1024" height="580"></canvas>
 
     <script src="./list.js"></script>
-
     <script>
         const canvas = document.getElementById('Canvas');
         const ctx = canvas.getContext('2d');
 
         const radius = 2.6;
         const baseInfectionDistance = 12;
-        const baseInfectionDelay = 10000;
+        const baseInfectionDelay = 15000;
         const smallClusterRange = 10;
         const cureChance = 0.01;
         const deathChance = 0.005;
@@ -56,7 +74,7 @@
                 ctx.closePath();
             });
 
-            updateConsole();
+            updateConsole();  // Atualiza as porcentagens no painel
         }
 
         function isNeighbor(circle1, circle2, distance) {
@@ -67,37 +85,35 @@
 
         function infectNeighbors(startCircle) {
             const infectionQueue = [startCircle];
+            
+            // Enquanto houver círculos a infectar
+            while (infectionQueue.length > 0) {
+                const currentCircle = infectionQueue.shift();
+                
+                if (currentCircle.state === 'normal') {
+                    currentCircle.state = 'infected';
+                    currentCircle.infectionTime = Date.now();
+                    drawCircles();  // Atualiza a tela para refletir as mudanças de estado
+                    
+                    // Encontra todos os vizinhos saudáveis dentro do alcance de infecção
+                    const neighbors = circles.filter(circle =>
+                        circle.state === 'normal' && isNeighbor(currentCircle, circle, baseInfectionDistance)
+                    );
 
-            function infectNext() {
-                if (infectionQueue.length > 0) {
-                    const currentCircle = infectionQueue.shift();
-                    if (currentCircle.state == 'normal') {
-                        currentCircle.state = 'infected';
-                        currentCircle.infectionTime = Date.now();
-                        drawCircles();
-
-                        const neighbors = circles.filter(circle =>
-                            circle.state == 'normal' && isNeighbor(currentCircle, circle, baseInfectionDistance)
-                        );
-
-                        neighbors.forEach(neighbor => {
-                            if (Math.random() < 0.7) {
-                                infectionQueue.push(neighbor);
-                                setTimeout(() => infectNeighbors(neighbor), baseInfectionDelay + Math.random() * 1500);
-                            }
-                        });
-                    }
-                    setTimeout(infectNext, baseInfectionDelay + Math.random() * 500);
+                    // Propaga a infecção para os vizinhos com chance de 70%
+                    neighbors.forEach(neighbor => {
+                        if (Math.random() < 0.7) {  // 70% de chance de infecção
+                            infectionQueue.push(neighbor);
+                        }
+                    });
                 }
             }
-
-            infectNext();
         }
 
         function attemptToCureOrKill() {
             const currentTime = Date.now();
             circles.forEach(circle => {
-                if (circle.state == 'infected') {
+                if (circle.state === 'infected') {
                     const timeInfected = currentTime - circle.infectionTime;
 
                     if (timeInfected >= deathDelay && Math.random() < deathChance) {
@@ -115,18 +131,17 @@
             function spreadChange() {
                 if (changeQueue.length > 0) {
                     const currentCircle = changeQueue.shift();
-                    if (currentCircle.state == 'infected') {
+                    if (currentCircle.state === 'infected') {
                         currentCircle.state = targetState;
                         drawCircles();
 
                         const neighbors = circles.filter(circle =>
-                            circle.state == 'infected' && isNeighbor(currentCircle, circle, smallClusterRange)
+                            circle.state === 'infected' && isNeighbor(currentCircle, circle, smallClusterRange)
                         );
 
                         neighbors.forEach(neighbor => {
                             if (Math.random() < 0.4) {
                                 changeQueue.push(neighbor);
-                                setTimeout(spreadChange, baseInfectionDelay + Math.random() * 1000);
                             }
                         });
                     }
@@ -138,9 +153,9 @@
 
         function updateConsole() {
             const totalCircles = circles.length;
-            const infectedCircles = circles.filter(circle => circle.state == 'infected').length;
-            const deadCircles = circles.filter(circle => circle.state == 'dead').length;
-            const curedCircles = circles.filter(circle => circle.state == 'cured').length;
+            const infectedCircles = circles.filter(circle => circle.state === 'infected').length;
+            const deadCircles = circles.filter(circle => circle.state === 'dead').length;
+            const curedCircles = circles.filter(circle => circle.state === 'cured').length;
             const normalCircles = totalCircles - infectedCircles - deadCircles - curedCircles;
 
             const infectedPercentage = ((infectedCircles / totalCircles) * 100).toFixed(2);
@@ -154,27 +169,77 @@
             curedCountElement.textContent = `Pessoas Curadas: ${curedPercentage}%`;
         }
 
+        function toggleMenu() {
+            const slideMenu = document.getElementById("slideMenu");
+            const menuIcon = document.getElementById("menuIcon");
+            const canvas = document.getElementById("Canvas");
+            const menuButton = document.getElementById("menuButton");
+
+            slideMenu.classList.toggle("active");
+
+            if (slideMenu.classList.contains("active")) {
+                menuIcon.classList.remove("fa-bars");
+                menuIcon.classList.add("fa-times");
+                canvas.style.width = "60vw";
+                canvas.style.height = "calc(60vw * 0.5664)";
+                menuButton.style.left = "270px";
+            } else {
+                menuIcon.classList.remove("fa-times");
+                menuIcon.classList.add("fa-bars");
+                canvas.style.width = "75vw";
+                canvas.style.height = "calc(75vw * 0.5664)";
+                menuButton.style.left = "1vw";
+            }
+        }
+
+        setInterval(attemptToCureOrKill, checkInterval);
+        drawCircles();
+
+        let currentDate = new Date();
+        let day = currentDate.getDate();
+        let month = currentDate.getMonth() + 1;
+        let year = currentDate.getFullYear();
+
+        const timerElement = document.getElementById('timer');
+
+        function updateTimer() {
+            day++;
+            if (day > 30) {
+                day = 1;
+                month++;
+            }
+            if (month > 12) {
+                month = 1;
+                year++;
+            }
+
+            timerElement.textContent = `Data: ${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
+        }
+
         canvas.addEventListener('click', (event) => {
             const rect = canvas.getBoundingClientRect();
-            const mouseX = event.clientX - rect.left;
-            const mouseY = event.clientY - rect.top;
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+
+            const mouseX = (event.clientX - rect.left) * scaleX;
+            const mouseY = (event.clientY - rect.top) * scaleY;
 
             circles.forEach(circle => {
-                if (isPointInCircle(mouseX, mouseY, circle) && circle.state == "normal") {
+                const dx = mouseX - circle.x;
+                const dy = mouseY - circle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance <= radius && circle.state === 'normal') {
+                    circle.state = 'infected';
+                    circle.infectionTime = Date.now();
                     infectNeighbors(circle);
+                    drawCircles();
                 }
             });
         });
 
-        function isPointInCircle(x, y, circle) {
-            const dx = x - circle.x;
-            const dy = y - circle.y;
-            return Math.sqrt(dx * dx + dy * dy) <= radius;
-        }
-
-        setInterval(attemptToCureOrKill, checkInterval);
-
-        drawCircles();
+        setInterval(updateTimer, 1000); // Atualiza o tempo a cada segundo
     </script>
 </body>
+
 </html>
