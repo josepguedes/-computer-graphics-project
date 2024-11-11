@@ -6,13 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Mapa Mundial</title>
     <link rel="stylesheet" href="style.css">
-    <!-- Font Awesome para ícones -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
 </head>
 
 <body>
 
-    <!-- Slide Menu -->
     <div id="slideMenu" class="slide-menu">
         <div id="console">
             <h2>Informações</h2>
@@ -23,14 +21,12 @@
         </div>
     </div>
 
-    <!-- Button to Open Slide Menu -->
     <div id="menuButton" class="menu-button">
         <button onclick="toggleMenu()">
-            <i id="menuIcon" class="fas fa-bars"></i>&nbsp&nbspMenu <!-- Ícone do menu com texto -->
+            <i id="menuIcon" class="fas fa-bars"></i>&nbsp;&nbsp;Menu
         </button>
     </div>
 
-    <!-- Timer -->
     <div id="timer"></div>
 
     <canvas id="Canvas" width="1024" height="580"></canvas>
@@ -40,20 +36,15 @@
         const canvas = document.getElementById('Canvas');
         const ctx = canvas.getContext('2d');
 
-        const radius = 2.6;
-        const baseInfectionDistance = 12;
-        const baseInfectionDelay = 15000;
-        const smallClusterRange = 10;
-        const cureChance = 0.01;
-        const deathChance = 0.005;
-        const cureDelay = 45000;
-        const deathDelay = 35000;
-        const checkInterval = 200;
+        const radius = 2.5;
+        const infectionRadius = 10;
+        const infectionDelay = 5000; // Aumentei para 1000ms (1 segundo)
+        const cureChance = 0.005; // Reduzi para que a cura ocorra mais devagar
+        const deathChance = 0.0025; // Reduzi para que a morte ocorra mais devagar
+        const cureDelay = 70000; // Aumentei para 70 segundos até que a cura aconteça
+        const deathDelay = 90000; // Aumentei para 90 segundos até que a morte aconteça
+        const checkInterval = 1000; // Aumentei o intervalo para verificar a cura ou morte a cada segundo
 
-        const healthyCountElement = document.getElementById('healthyCount');
-        const infectedCountElement = document.getElementById('infectedCount');
-        const deadCountElement = document.getElementById('deadCount');
-        const curedCountElement = document.getElementById('curedCount');
 
         const states = {
             normal: { color: "white" },
@@ -64,51 +55,70 @@
 
         function drawCircles() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
             circles.forEach(circle => {
-                const circleState = states[circle.state];
-                ctx.fillStyle = circleState ? circleState.color : states.normal.color;
+                ctx.fillStyle = states[circle.state].color;
                 ctx.beginPath();
                 ctx.arc(circle.x, circle.y, radius, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.closePath();
             });
-
-            updateConsole();  // Atualiza as porcentagens no painel
+            updateConsole();
         }
 
-        function isNeighbor(circle1, circle2, distance) {
+        function infectCircle(circle) {
+            if (circle.state === 'normal') {
+                circle.state = 'infected';
+                circle.infectionTime = Date.now();
+                drawCircles();
+                console.log(`Círculo infectado em (${circle.x}, ${circle.y})`);
+            }
+        }
+
+        function propagateInfection(originCircle) {
+            circles.forEach(circle => {
+                if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius)) {
+                    if (Math.random() < 0.7) { // Probabilidade de infecção para adicionar variabilidade
+                        setTimeout(() => {
+                            infectCircle(circle);
+                            propagateInfection(circle); // Recursivo para que cada círculo infectado continue a infecção
+                        }, infectionDelay + (Math.random() * 300 - 150));
+                    }
+                }
+            });
+        }
+
+        function isNeighbor(circle1, circle2, baseDistance) {
             const dx = circle1.x - circle2.x;
             const dy = circle1.y - circle2.y;
+            const distance = baseDistance + (Math.random() * 5 - 2.5); 
             return Math.sqrt(dx * dx + dy * dy) <= distance;
         }
 
-        function infectNeighbors(startCircle) {
-            const infectionQueue = [startCircle];
-            
-            // Enquanto houver círculos a infectar
-            while (infectionQueue.length > 0) {
-                const currentCircle = infectionQueue.shift();
-                
-                if (currentCircle.state === 'normal') {
-                    currentCircle.state = 'infected';
-                    currentCircle.infectionTime = Date.now();
-                    drawCircles();  // Atualiza a tela para refletir as mudanças de estado
-                    
-                    // Encontra todos os vizinhos saudáveis dentro do alcance de infecção
-                    const neighbors = circles.filter(circle =>
-                        circle.state === 'normal' && isNeighbor(currentCircle, circle, baseInfectionDistance)
-                    );
+        canvas.addEventListener('click', (event) => {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mouseX = (event.clientX - rect.left) * scaleX;
+            const mouseY = (event.clientY - rect.top) * scaleY;
 
-                    // Propaga a infecção para os vizinhos com chance de 70%
-                    neighbors.forEach(neighbor => {
-                        if (Math.random() < 0.7) {  // 70% de chance de infecção
-                            infectionQueue.push(neighbor);
-                        }
-                    });
+            let infectedCircle = null;
+            circles.some(circle => {
+                const dx = mouseX - circle.x;
+                const dy = mouseY - circle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                if (distance <= radius && circle.state === 'normal') {
+                    infectedCircle = circle;
+                    return true;
                 }
+                return false;
+            });
+
+            if (infectedCircle) {
+                infectCircle(infectedCircle);
+                propagateInfection(infectedCircle);
             }
-        }
+        });
 
         function attemptToCureOrKill() {
             const currentTime = Date.now();
@@ -116,40 +126,36 @@
                 if (circle.state === 'infected') {
                     const timeInfected = currentTime - circle.infectionTime;
 
-                    if (timeInfected >= deathDelay && Math.random() < deathChance) {
-                        initiateClusterChange(circle, 'dead');
-                    } else if (timeInfected >= cureDelay && Math.random() < cureChance) {
-                        initiateClusterChange(circle, 'cured');
+                    if (timeInfected >= deathDelay) {
+                        // Calcular o número de vizinhos infectados próximos
+                        const neighbors = circles.filter(neighbor => neighbor.state === 'infected' && isNeighbor(circle, neighbor, infectionRadius));
+                        // Ajustar a chance de morte com base no número de vizinhos infectados
+                        const deathFactor = Math.min(1, neighbors.length * 0.02); // A chance de morte aumenta com o número de infectados, mas de forma mais suave
+                        const deathProbability = deathChance + deathFactor;
+
+                        if (Math.random() < deathProbability) {
+                            circle.state = 'dead';
+                            console.log(`Círculo morto em (${circle.x}, ${circle.y})`);
+                        }
+                    }
+
+                    if (timeInfected >= cureDelay) {
+                        // Calcular o número de vizinhos infectados próximos
+                        const neighbors = circles.filter(neighbor => neighbor.state === 'infected' && isNeighbor(circle, neighbor, infectionRadius));
+                        // Ajustar a chance de cura com base no número de vizinhos infectados
+                        const cureFactor = Math.min(1, neighbors.length * 0.03); // A chance de cura aumenta com o número de infectados ao redor, mas de forma mais gradual
+                        const cureProbability = cureChance + cureFactor;
+
+                        if (Math.random() < cureProbability) {
+                            circle.state = 'cured';
+                            console.log(`Círculo curado em (${circle.x}, ${circle.y})`);
+                        }
                     }
                 }
             });
+            drawCircles();
         }
 
-        function initiateClusterChange(centerCircle, targetState) {
-            const changeQueue = [centerCircle];
-
-            function spreadChange() {
-                if (changeQueue.length > 0) {
-                    const currentCircle = changeQueue.shift();
-                    if (currentCircle.state === 'infected') {
-                        currentCircle.state = targetState;
-                        drawCircles();
-
-                        const neighbors = circles.filter(circle =>
-                            circle.state === 'infected' && isNeighbor(currentCircle, circle, smallClusterRange)
-                        );
-
-                        neighbors.forEach(neighbor => {
-                            if (Math.random() < 0.4) {
-                                changeQueue.push(neighbor);
-                            }
-                        });
-                    }
-                }
-            }
-
-            spreadChange();
-        }
 
         function updateConsole() {
             const totalCircles = circles.length;
@@ -158,49 +164,34 @@
             const curedCircles = circles.filter(circle => circle.state === 'cured').length;
             const normalCircles = totalCircles - infectedCircles - deadCircles - curedCircles;
 
+            const healthyPercentage = ((normalCircles / totalCircles) * 100).toFixed(2);
             const infectedPercentage = ((infectedCircles / totalCircles) * 100).toFixed(2);
-            const normalPercentage = ((normalCircles / totalCircles) * 100).toFixed(2);
             const deadPercentage = ((deadCircles / totalCircles) * 100).toFixed(2);
             const curedPercentage = ((curedCircles / totalCircles) * 100).toFixed(2);
 
-            healthyCountElement.textContent = `Pessoas Saudáveis: ${normalPercentage}%`;
-            infectedCountElement.textContent = `Pessoas Infetadas: ${infectedPercentage}%`;
-            deadCountElement.textContent = `Pessoas Mortas: ${deadPercentage}%`;
-            curedCountElement.textContent = `Pessoas Curadas: ${curedPercentage}%`;
+            document.getElementById('healthyCount').textContent = `Pessoas Saudáveis: ${healthyPercentage}%`;
+            document.getElementById('infectedCount').textContent = `Pessoas Infetadas: ${infectedPercentage}%`;
+            document.getElementById('deadCount').textContent = `Pessoas Mortas: ${deadPercentage}%`;
+            document.getElementById('curedCount').textContent = `Pessoas Curadas: ${curedPercentage}%`;
         }
 
         function toggleMenu() {
             const slideMenu = document.getElementById("slideMenu");
             const menuIcon = document.getElementById("menuIcon");
-            const canvas = document.getElementById("Canvas");
-            const menuButton = document.getElementById("menuButton");
 
             slideMenu.classList.toggle("active");
-
-            if (slideMenu.classList.contains("active")) {
-                menuIcon.classList.remove("fa-bars");
-                menuIcon.classList.add("fa-times");
-                canvas.style.width = "60vw";
-                canvas.style.height = "calc(60vw * 0.5664)";
-                menuButton.style.left = "270px";
-            } else {
-                menuIcon.classList.remove("fa-times");
-                menuIcon.classList.add("fa-bars");
-                canvas.style.width = "75vw";
-                canvas.style.height = "calc(75vw * 0.5664)";
-                menuButton.style.left = "1vw";
-            }
+            menuIcon.classList.toggle("fa-bars");
+            menuIcon.classList.toggle("fa-times");
         }
 
         setInterval(attemptToCureOrKill, checkInterval);
         drawCircles();
 
+        const timerElement = document.getElementById('timer');
         let currentDate = new Date();
         let day = currentDate.getDate();
         let month = currentDate.getMonth() + 1;
         let year = currentDate.getFullYear();
-
-        const timerElement = document.getElementById('timer');
 
         function updateTimer() {
             day++;
@@ -212,33 +203,10 @@
                 month = 1;
                 year++;
             }
-
             timerElement.textContent = `Data: ${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
         }
 
-        canvas.addEventListener('click', (event) => {
-            const rect = canvas.getBoundingClientRect();
-            const scaleX = canvas.width / rect.width;
-            const scaleY = canvas.height / rect.height;
-
-            const mouseX = (event.clientX - rect.left) * scaleX;
-            const mouseY = (event.clientY - rect.top) * scaleY;
-
-            circles.forEach(circle => {
-                const dx = mouseX - circle.x;
-                const dy = mouseY - circle.y;
-                const distance = Math.sqrt(dx * dx + dy * dy);
-
-                if (distance <= radius && circle.state === 'normal') {
-                    circle.state = 'infected';
-                    circle.infectionTime = Date.now();
-                    infectNeighbors(circle);
-                    drawCircles();
-                }
-            });
-        });
-
-        setInterval(updateTimer, 1000); // Atualiza o tempo a cada segundo
+        setInterval(updateTimer, 1000);
     </script>
 </body>
 
