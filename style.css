@@ -1,3 +1,4 @@
+/* Estilos gerais */
 body {
     display: flex;
     justify-content: center;
@@ -7,9 +8,10 @@ body {
     position: relative;
     background-color: rgba(11, 25, 106, 0.844);
     font-size: 1vw;
-    overflow: hidden; /* Para evitar barras de rolagem durante a animação */
+    overflow: hidden; /* Evitar barras de rolagem durante a animação */
 }
 
+/* Estilo do Canvas */
 canvas {
     cursor: pointer;
     width: 75vw;
@@ -19,34 +21,52 @@ canvas {
     transition: width 0.3s, height 0.3s; /* Transição suave para ajuste de tamanho */
 }
 
+/* Estilos do menu deslizante */
 #slideMenu {
     position: fixed;
     top: 0;
-    left: -20vw; /* O menu começa fora da tela, usando uma porcentagem da largura da tela */
+    left: -20vw; /* O menu começa fora da tela */
     width: 20vw; /* O menu terá 20% da largura da tela */
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
-    transition: left 0.3s ease;
-    padding: 2vw; /* O padding também é responsivo */
+    transition: left 0.5s ease;
+    padding: 1.5vw;
     box-sizing: border-box;
     z-index: 100;
 }
 
 #slideMenu.active {
-    left: 0; /* Quando ativo, o menu ocupa toda a altura e se desliza para dentro */
+    left: 0; /* Quando ativo, o menu se desliza para dentro */
 }
 
+/* Estilo do botão de fechar no menu */
+#closeButton {
+    display: none; /* Ocultar o botão de fechar por padrão */
+    position: absolute;
+    top: 1vh;
+    right: 0.4vw;
+    background: none;
+    border: none;
+    color: white;
+    font-size: 1.5vw;
+    cursor: pointer;
+}
 
-#slideMenu.active {
-    left: 0;
+#slideMenu.active #closeButton {
+    display: block; /* Exibir o botão de fechar quando o menu está ativo */
+}
+
+#closeButton:hover {
+    color: #757575;
 }
 
 .menu-button {
     position: fixed;
     top: 1vh;
-    left: 10px;
+    left: 0.5vw;
     z-index: 101;
-    transition: left 0.3s; /* Transição suave para o botão */
+    transition: opacity 0.5s ease; /* Aumentado o tempo da transição para 0.5s para o aparecimento */
+    opacity: 1;
 }
 
 .menu-button button {
@@ -64,6 +84,18 @@ canvas {
     background-color: #555;
 }
 
+.menu-button.hidden {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease; /* Desaparecimento mais rápido */
+}
+
+.menu-button.show {
+    opacity: 1;
+    transition: opacity 0.5s ease; /* Aparecimento mais lento, em 0.5s */
+}
+
+/* Estilos do console no menu */
 #console {
     color: white;
     font-family: Arial, sans-serif;
@@ -71,6 +103,17 @@ canvas {
     user-select: none;
 }
 
+#console #consoleTitle {
+    font-size: 2.2vw;
+    padding-bottom: 3.5vh;
+    font-weight: bold;
+}
+
+#console div {
+    padding-bottom: 1.2vh;
+}
+
+/* Estilo do temporizador */
 #timer {
     position: absolute;
     top: 1vh;
@@ -84,4 +127,41 @@ canvas {
     font-weight: bold;
     font-size: 1vw;
     user-select: none;
+}
+
+/* Estilo para os botões de controle de tempo (ficando abaixo da data) */
+#menuTimer {
+    position: absolute;
+    top: 8.5vh; /* Coloca os botões logo abaixo da data */
+    right: 0.5vw;
+    display: flex;
+    justify-content: space-between; /* Alinha os botões na horizontal */
+    width: 9.4vw; /* Ajusta a largura para os botões ficarem com o mesmo comprimento da data */
+    gap: 0.3vw; /* Espaçamento entre os botões */
+    z-index: 10;
+}
+
+/* Estilo dos botões */
+#menuTimer button {
+    background-color: #333;
+    border: none;
+    color: white;
+    padding: 0.3vw 0.2vh; /* Reduzido para tornar os botões mais compactos */
+    font-size: 0.8vw; /* Font size reduzido */
+    border-radius: 0.5vw;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 50%; /* Faz com que o botão tenha uma largura igual e ajustada */
+}
+
+#menuTimer button:hover {
+    background-color: #555;
+}
+
+#menuTimer button:disabled {
+    background-color: #777;
+    cursor: default;
 }
