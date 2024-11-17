@@ -23,7 +23,7 @@
             <div id="curedCount">Pessoas Curadas: 0%</div>
         </div>
     </div>
-    
+
     <div id="menuButton" class="menu-button">
         <button onclick="toggleMenu()">
             <i id="menuIcon" class="fas fa-bars"></i>&nbsp;&nbsp;Menu
@@ -56,7 +56,7 @@
         const infectionChance = 0.5;
         const infectionDelay = 5000;
 
-        const cureChance = 0.02; 
+        const cureChance = 0.02;
         const deathChance = 0.0025;
 
         const cureAndDeathDelay = 50000;
@@ -72,8 +72,48 @@
             dead: { color: "black" }
         };
 
+        const airports = [
+            { x: 390, y: 350, color: 'red' },   // Aeroporto 1
+            { x: 480, y: 200, color: 'blue' },  // Aeroporto 2
+            { x: 520, y: 380, color: 'green' }, // Aeroporto 3
+            { x: 770, y: 450, color: 'yellow' },// Aeroporto 4
+            { x: 770, y: 150, color: 'black' } // Aeroporto 5
+        ];
+
+        let planeX = airports[0].x; // Posição inicial do avião (primeiro aeroporto)
+        let planeY = airports[0].y;
+        let currentAirportIndex = 0; // Índice do aeroporto atual
+        const planeSpeed = 1;
+
+        // Trajeto cíclico (ida e volta)
+        let path = [];
+
+        // Adiciona os aeroportos na ordem de ida
+        for (let i = 0; i < airports.length; i++) {
+            path.push(airports[i]);
+        }
+
+        // Adiciona os aeroportos na ordem de volta, sem o primeiro e o último aeroporto para evitar duplicados
+        for (let i = airports.length - 2; i > 0; i--) {
+            path.push(airports[i]);
+        }
+
+
+        let nextAirportIndex = 1; // Índice do próximo aeroporto no trajeto
+
+        function drawAirports() {
+            airports.forEach(airport => {
+                ctx.beginPath();
+                ctx.arc(airport.x, airport.y, 7, 0, Math.PI * 2);
+                ctx.fillStyle = airport.color;
+                ctx.fill();
+                ctx.closePath();
+            });
+        }
+
         function drawCircles() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
+            drawAirports();
             circles.forEach(circle => {
                 ctx.fillStyle = states[circle.state].color;
                 ctx.beginPath();
@@ -83,6 +123,71 @@
             });
             updateConsole();
         }
+
+        function movePlane() {
+            const plane = new Image();
+            plane.src = './plane.png';
+            const scale = 0.1;
+
+            plane.onload = function () {
+                const planeWidth = plane.width * scale;
+                const planeHeight = plane.height * scale;
+
+                function animate() {
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    drawCircles();
+                    drawAirports();
+
+
+                    const nextAirport = path[nextAirportIndex];
+                    const dx = nextAirport.x - planeX;
+                    const dy = nextAirport.y - planeY;
+                    const distance = Math.sqrt(dx * dx + dy * dy);
+
+                    const stepX = (dx / distance) * planeSpeed;
+                    const stepY = (dy / distance) * planeSpeed;
+
+                    planeX += stepX;
+                    planeY += stepY;
+
+                    // Verificar se o avião chegou ao próximo aeroporto
+                    if (distance <= planeSpeed) {
+                        currentAirportIndex = nextAirportIndex;
+                        nextAirportIndex = (nextAirportIndex + 1) % path.length; // Avançar no percurso
+                    }
+
+                    // Desenhar o avião com ajuste de rotação e espelhamento
+                    ctx.save();
+                    const angle = Math.atan2(dy, dx);
+
+                    // Verificar se o avião está indo de volta
+                    if (dx < 0) {
+                        ctx.translate(planeX, planeY);
+                        ctx.rotate(angle + Math.PI); // Adiciona 180° para inverter a direção
+                        ctx.scale(-1, 1); // Inverter a imagem horizontalmente
+                    } else {
+                        ctx.translate(planeX, planeY);
+                        ctx.rotate(angle); // Mantém a rotação normal
+                    }
+
+                    const planeWidth = plane.width * scale;
+                    const planeHeight = plane.height * scale;
+
+                    // Desenhar a imagem do avião com rotação e espelhamento aplicados
+                    ctx.drawImage(plane, -planeWidth / 2, -planeHeight / 2, planeWidth, planeHeight);
+                    ctx.restore();
+
+                    requestAnimationFrame(animate);
+                }
+
+
+
+
+                animate();
+            };
+        }
+
+        movePlane(); // Iniciar o movimento do avião
 
         function infectCircle(circle) {
             if (circle.state === 'normal') {
@@ -100,7 +205,7 @@
                     if (Math.random() < infectionChance) {
                         setTimeout(() => {
                             infectCircle(circle);
-                            propagateInfection(circle); 
+                            propagateInfection(circle);
                         }, infectionDelay / timeMultiplier);
                     }
                 }
@@ -110,7 +215,7 @@
         function isNeighbor(circle1, circle2, baseDistance) {
             const dx = circle1.x - circle2.x;
             const dy = circle1.y - circle2.y;
-            const distance = baseDistance + (Math.random() * 5 - 2.5); 
+            const distance = baseDistance + (Math.random() * 5 - 2.5);
             return Math.sqrt(dx * dx + dy * dy) <= distance;
         }
 
@@ -150,14 +255,14 @@
 
                     if (timeInfected >= cureAndDeathDelay) {
                         const neighbors = circles.filter(neighbor => neighbor.state === 'infected' && isNeighbor(circle, neighbor, infectionRadius));
-                        const deathFactor = Math.min(1, neighbors.length * 0.01); 
+                        const deathFactor = Math.min(1, neighbors.length * 0.01);
                         const deathProbability = deathChance + deathFactor;
 
                         if (Math.random() < deathProbability) {
                             circle.state = 'dead';
                         }
 
-                        const cureFactor = Math.min(1, neighbors.length * 0.01); 
+                        const cureFactor = Math.min(1, neighbors.length * 0.01);
                         const cureProbability = cureChance + cureFactor;
 
                         if (Math.random() < cureProbability) {
@@ -237,6 +342,7 @@
         window.onload = function () {
             updateTimer();
             drawCircles();
+            drawAirports();
             timeMultiplier = 3;
         };
     </script>
