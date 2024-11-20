@@ -53,17 +53,16 @@
 
         const radius = 2.5;
         const infectionRadius = 9;
-        const infectionChance = 0.5;
+
+        const infectionChance = 0.4;
         const infectionDelay = 5000;
 
-        const cureChance = 0.02;
-        const deathChance = 0.0025;
+        const cureChance = 0.002;
+        const deathChance = 0.00025;
 
         const cureAndDeathDelay = 50000;
-        const checkInterval = 1000;
 
-        let timeMultiplier = 0;
-        let lastTickTime = Date.now();
+        let timeMultiplier = 1;
 
         const states = {
             normal: { color: "white" },
@@ -80,10 +79,18 @@
             { x: 770, y: 150, color: 'black' } // Aeroporto 5
         ];
 
+        function initializeCircles() {
+            circles.forEach(circle => {
+                circle.timeInfected = 0; // Adiciona a propriedade timeInfected em cada círculo
+            });
+        }
+
+        initializeCircles();
+
         let planeX = airports[0].x; // Posição inicial do avião (primeiro aeroporto)
         let planeY = airports[0].y;
         let currentAirportIndex = 0; // Índice do aeroporto atual
-        const planeSpeed = 1;
+        let planeSpeed = 1;
 
         // Trajeto cíclico (ida e volta)
         let path = [];
@@ -97,7 +104,6 @@
         for (let i = airports.length - 2; i > 0; i--) {
             path.push(airports[i]);
         }
-
 
         let nextAirportIndex = 1; // Índice do próximo aeroporto no trajeto
 
@@ -138,22 +144,24 @@
                     drawCircles();
                     drawAirports();
 
+                    let dx = 0;
+                    let dy = 0;
+                    if (timeMultiplier > 0) {
+                        const nextAirport = path[nextAirportIndex];
+                        dx = nextAirport.x - planeX;
+                        dy = nextAirport.y - planeY;
+                        const distance = Math.sqrt(dx * dx + dy * dy);
 
-                    const nextAirport = path[nextAirportIndex];
-                    const dx = nextAirport.x - planeX;
-                    const dy = nextAirport.y - planeY;
-                    const distance = Math.sqrt(dx * dx + dy * dy);
+                        const stepX = (dx / distance) * planeSpeed;
+                        const stepY = (dy / distance) * planeSpeed;
 
-                    const stepX = (dx / distance) * planeSpeed;
-                    const stepY = (dy / distance) * planeSpeed;
+                        planeX += stepX;
+                        planeY += stepY;
 
-                    planeX += stepX;
-                    planeY += stepY;
-
-                    // Verificar se o avião chegou ao próximo aeroporto
-                    if (distance <= planeSpeed) {
-                        currentAirportIndex = nextAirportIndex;
-                        nextAirportIndex = (nextAirportIndex + 1) % path.length; // Avançar no percurso
+                        if (distance <= planeSpeed) {
+                            currentAirportIndex = nextAirportIndex;
+                            nextAirportIndex = (nextAirportIndex + 1) % path.length; // Avançar no percurso
+                        }
                     }
 
                     // Desenhar o avião com ajuste de rotação e espelhamento
@@ -179,10 +187,6 @@
 
                     requestAnimationFrame(animate);
                 }
-
-
-
-
                 animate();
             };
         }
@@ -192,25 +196,30 @@
         function infectCircle(circle) {
             if (circle.state === 'normal') {
                 circle.state = 'infected';
-                circle.infectionTime = Date.now();
                 drawCircles();
             }
         }
 
+        attemptToCureOrKill();
+
         function propagateInfection(originCircle) {
-            if (timeMultiplier === 3) return;
+            if (originCircle.state !== 'infected') return;
 
             circles.forEach(circle => {
                 if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius)) {
-                    if (Math.random() < infectionChance) {
-                        setTimeout(() => {
+                    const infectionInterval = setInterval(() => {
+                        if (timeMultiplier === 0) return; // Não propaga enquanto o tempo estiver pausado
+
+                        if (Math.random() < infectionChance) {
                             infectCircle(circle);
                             propagateInfection(circle);
-                        }, infectionDelay / timeMultiplier);
-                    }
+                            clearInterval(infectionInterval); // Propagação ocorre uma vez por círculo
+                        }
+                    }, infectionDelay / timeMultiplier);
                 }
             });
         }
+
 
         function isNeighbor(circle1, circle2, baseDistance) {
             const dx = circle1.x - circle2.x;
@@ -226,71 +235,72 @@
             const mouseX = (event.clientX - rect.left) * scaleX;
             const mouseY = (event.clientY - rect.top) * scaleY;
 
-            let infectedCircle = null;
             circles.some(circle => {
                 const dx = mouseX - circle.x;
                 const dy = mouseY - circle.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
                 if (distance <= radius && circle.state === 'normal') {
-                    infectedCircle = circle;
+                    infectCircle(circle);
+                    if (timeMultiplier > 0) {
+                        propagateInfection(circle);
+                    } else {
+                        const propagateOnResume = setInterval(() => {
+                            if (timeMultiplier > 0) {
+                                propagateInfection(circle);
+                                clearInterval(propagateOnResume);
+                            }
+                        }, 500);
+                    }
                     return true;
                 }
                 return false;
             });
-
-            if (infectedCircle) {
-                infectCircle(infectedCircle);
-                propagateInfection(infectedCircle);
-            }
         });
 
+
         function attemptToCureOrKill() {
-            if (timeMultiplier === 3) return;
-
-            const currentTime = Date.now();
             circles.forEach(circle => {
-                if (circle.state === 'infected') {
-                    const timeInfected = currentTime - circle.infectionTime;
+                if(timeMultiplier === 0) return;
 
-                    if (timeInfected >= cureAndDeathDelay) {
-                        const neighbors = circles.filter(neighbor => neighbor.state === 'infected' && isNeighbor(circle, neighbor, infectionRadius));
-                        const deathFactor = Math.min(1, neighbors.length * 0.01);
-                        const deathProbability = deathChance + deathFactor;
+                if (circle.state === 'infected') {
+                    circle.timeInfected += 100 * (timeMultiplier || 1); // Atualiza considerando o multiplicador
+
+                    if (circle.timeInfected >= cureAndDeathDelay) {
+                        const neighbors = circles.filter(neighbor =>
+                            neighbor.state === 'infected' &&
+                            isNeighbor(circle, neighbor, infectionRadius)
+                        );
+
+                        const deathProbability = deathChance + Math.min(1, neighbors.length * 0.001);
+                        const cureProbability = cureChance + Math.min(1, neighbors.length * 0.001);
 
                         if (Math.random() < deathProbability) {
                             circle.state = 'dead';
-                        }
-
-                        const cureFactor = Math.min(1, neighbors.length * 0.01);
-                        const cureProbability = cureChance + cureFactor;
-
-                        if (Math.random() < cureProbability) {
+                        } else if (Math.random() < cureProbability) {
                             circle.state = 'cured';
                         }
+
+                        drawCircles(); // Atualiza o desenho
                     }
                 }
             });
-            drawCircles();
-            setTimeout(attemptToCureOrKill, checkInterval / timeMultiplier);
+
+            // Rechamar a função dinamicamente
+            setTimeout(attemptToCureOrKill, 1000 / (timeMultiplier || 1));
         }
 
+
         function updateConsole() {
-            const totalCircles = circles.length;
-            const infectedCircles = circles.filter(circle => circle.state === 'infected').length;
-            const deadCircles = circles.filter(circle => circle.state === 'dead').length;
-            const curedCircles = circles.filter(circle => circle.state === 'cured').length;
-            const normalCircles = totalCircles - infectedCircles - deadCircles - curedCircles;
+            const healthy = circles.filter(c => c.state === 'normal').length;
+            const infected = circles.filter(c => c.state === 'infected').length;
+            const dead = circles.filter(c => c.state === 'dead').length;
+            const cured = circles.filter(c => c.state === 'cured').length;
 
-            const healthyPercentage = ((normalCircles / totalCircles) * 100).toFixed(2);
-            const infectedPercentage = ((infectedCircles / totalCircles) * 100).toFixed(2);
-            const deadPercentage = ((deadCircles / totalCircles) * 100).toFixed(2);
-            const curedPercentage = ((curedCircles / totalCircles) * 100).toFixed(2);
-
-            document.getElementById('healthyCount').textContent = `Pessoas Saudáveis: ${healthyPercentage}%`;
-            document.getElementById('infectedCount').textContent = `Pessoas Infetadas: ${infectedPercentage}%`;
-            document.getElementById('deadCount').textContent = `Pessoas Mortas: ${deadPercentage}%`;
-            document.getElementById('curedCount').textContent = `Pessoas Curadas: ${curedPercentage}%`;
+            document.getElementById('healthyCount').textContent = `Pessoas Saudáveis: ${(healthy / circles.length * 100).toFixed(2)}%`;
+            document.getElementById('infectedCount').textContent = `Pessoas Infetadas: ${(infected / circles.length * 100).toFixed(2)}%`;
+            document.getElementById('deadCount').textContent = `Pessoas Mortas: ${(dead / circles.length * 100).toFixed(2)}%`;
+            document.getElementById('curedCount').textContent = `Pessoas Curadas: ${(cured / circles.length * 100).toFixed(2)}%`;
         }
 
         function toggleMenu() {
@@ -308,18 +318,20 @@
         let simulatedDate = new Date();
 
         function updateTimer() {
-            if (timeMultiplier !== 3) {
+            if (timeMultiplier > 0) {
                 simulatedDate.setDate(simulatedDate.getDate() + 1);
                 const day = simulatedDate.getDate();
                 const month = simulatedDate.getMonth() + 1;
                 const year = simulatedDate.getFullYear();
                 document.getElementById('timer').textContent = `Data: ${day.toString().padStart(2, '0')}/${month.toString().padStart(2, '0')}/${year}`;
             }
-            setTimeout(updateTimer, 1000 / timeMultiplier);
+
+            setTimeout(updateTimer, 1000 / (timeMultiplier || 1));
         }
 
         function pauseTime() {
-            timeMultiplier = 3;
+            timeMultiplier = 0;
+            planeSpeed = 0;
             document.getElementById('pauseButton').disabled = true;
             document.getElementById('resumeButton').disabled = false;
             document.getElementById('fastButton').disabled = false;
@@ -327,13 +339,18 @@
 
         function resumeTime() {
             timeMultiplier = 1;
+            planeSpeed = timeMultiplier;
             document.getElementById('pauseButton').disabled = false;
             document.getElementById('resumeButton').disabled = true;
             document.getElementById('fastButton').disabled = false;
+
+            // Recalcula propagação de eventos ao retomar
+            attemptToCureOrKill();
         }
 
         function fastTime() {
-            timeMultiplier = 20;
+            timeMultiplier = 2;
+            planeSpeed = timeMultiplier;
             document.getElementById('pauseButton').disabled = false;
             document.getElementById('resumeButton').disabled = false;
             document.getElementById('fastButton').disabled = true;
@@ -343,7 +360,7 @@
             updateTimer();
             drawCircles();
             drawAirports();
-            timeMultiplier = 3;
+            timeMultiplier = 0;
         };
     </script>
 </body>
