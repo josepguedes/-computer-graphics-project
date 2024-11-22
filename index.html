@@ -10,28 +10,72 @@
 </head>
 
 <body>
-
     <div id="slideMenu" class="slide-menu">
         <button id="closeButton" onclick="toggleMenu()">
             <i class="fas fa-times"></i>
         </button>
         <div id="console">
-            <div id="consoleTitle">Informações</div>
+            <h3 id="consoleTitle">Informações</h3>
             <div id="healthyCount">Pessoas Saudáveis: 100%</div>
             <div id="infectedCount">Pessoas Infetadas: 0%</div>
             <div id="deadCount">Pessoas Mortas: 0%</div>
             <div id="curedCount">Pessoas Curadas: 0%</div>
         </div>
+    
+        <div id="settings">
+            <!-- Seção de Probabilidades -->
+            <div id="probabilities">
+                <h3 id="probabilitiesTitle">Probabilidades</h3>
+                <div class="setting-item">
+                    <label for="infectionChance">Probabilidade de Infecção:</label>
+                    <input type="range" id="infectionChance" min="0" max="100" step="0.1" value="40" oninput="updateInfectionChance(value)">
+                    <span id="infectionChanceLabel">40%</span>
+                </div>
+                <div class="setting-item">
+                    <label for="deathChance">Probabilidade de Morte:</label>
+                    <input type="range" id="deathChance" min="0" max="100" step="0.1" value="2.5" oninput="updateDeathChance(value)">
+                    <span id="deathChanceLabel">2.5%</span>
+                </div>
+                <div class="setting-item">
+                    <label for="cureChance">Probabilidade de Cura:</label>
+                    <input type="range" id="cureChance" min="0" max="100" step="0.1" value="20" oninput="updateCureChance(value)">
+                    <span id="cureChanceLabel">20%</span>
+                </div>
+            </div>
+    
+            <!-- Seção de Tempo -->
+            <div id="timeSettings">
+                <h3 id="timeSettingsTitle">Tempo</h3>
+                <div class="setting-item">
+                    <label for="infectTime">Tempo para começar a Infecção:</label>
+                    <input type="range" id="infectTime" min="1" max="15" step="0.5" value="5" oninput="updateinfectTime(value)">
+                    <span id="infectionTimeLabel">5s</span>
+                </div>                
+                <div class="setting-item">
+                    <label for="cureTimer">Tempo para começar a Morte/Cura:</label>
+                    <input type="range" id="deathCureTime" min="1" max="60" step="0.5" value="40" oninput="updatedeathCureTime(value)">
+                    <span id="deathCureTimeLabel">40s</span>
+                </div>
+            </div>
+    
+            <button id="airplaneButton" class="airplane-button" onclick="movePlane()">
+                &nbsp;<i id="planeIcon" class="fas fa-plane"></i>&nbsp;Adicionar Aeroporto
+            </button>
+    
+            <button id="resetButton" class="reset-button" onclick="reset()">
+                <i class="fas fa-undo"></i>&nbsp;&nbsp;Resetar
+            </button>
+        </div>
     </div>
-
+    
     <div id="menuButton" class="menu-button">
         <button onclick="toggleMenu()">
             <i id="menuIcon" class="fas fa-bars"></i>&nbsp;&nbsp;Menu
         </button>
     </div>
-
+    
     <div id="timer"></div>
-
+    
     <div id="menuTimer">
         <button id="pauseButton" onclick="pauseTime()" disabled>
             <i class="fas fa-pause"></i>
@@ -43,41 +87,65 @@
             <i class="fas fa-forward"></i>
         </button>
     </div>
-
-    <canvas id="Canvas" width="1024" height="580"></canvas>
+    
+    <canvas id="Canvas" width="1024" height="580"></canvas>    
 
     <script src="./list.js"></script>
     <script>
         const canvas = document.getElementById('Canvas');
         const ctx = canvas.getContext('2d');
 
-        const radius = 2.5;
-        const infectionRadius = 9;
+        let radius = 2.5;
+        let infectionRadius = 9;
+        
+        let infectionChance, infectionDelay, cureChance, deathChance, cureAndDeathDelay, timeMultiplier, isInfecting;
 
-        const infectionChance = 0.4;
-        const infectionDelay = 5000;
-
-        const cureChance = 0.002;
-        const deathChance = 0.00025;
-
-        const cureAndDeathDelay = 50000;
-
-        let timeMultiplier = 1;
-
-        const states = {
+        let states = {
             normal: { color: "white" },
             infected: { color: "red" },
             cured: { color: "orange" },
             dead: { color: "black" }
         };
 
-        const airports = [
-            { x: 390, y: 350, color: 'red' },   // Aeroporto 1
-            { x: 480, y: 200, color: 'blue' },  // Aeroporto 2
-            { x: 520, y: 380, color: 'green' }, // Aeroporto 3
-            { x: 770, y: 450, color: 'yellow' },// Aeroporto 4
-            { x: 770, y: 150, color: 'black' } // Aeroporto 5
-        ];
+        let airports = [];
+
+        function setVariables(){
+            infectionChance = 0.4;
+            infectionDelay = 5000;
+
+            cureChance = 0.002;
+            deathChance = 0.00025;
+
+            cureAndDeathDelay = 40000;
+
+            timeMultiplier = 1;
+
+            isInfecting = false;
+
+            airports = [
+                { x: 390, y: 350, color: 'red' },   // Aeroporto 1
+                { x: 480, y: 200, color: 'blue' },  // Aeroporto 2
+                { x: 520, y: 380, color: 'green' }, // Aeroporto 3
+                { x: 770, y: 450, color: 'yellow' },// Aeroporto 4
+                { x: 770, y: 150, color: 'black' } // Aeroporto 5
+            ];
+
+            document.getElementById('infectionChance').value = 40;
+            document.getElementById('deathChance').value = 2.5;
+            document.getElementById('cureChance').value = 20;
+
+            document.getElementById('infectTime').value = 5;
+            document.getElementById('deathCureTime').value = 40;
+            
+            document.getElementById('infectionChanceLabel').textContent = `40%`;
+            document.getElementById('deathChanceLabel').textContent = `2.5%`;
+            document.getElementById('cureChanceLabel').textContent = `20%`;
+
+            document.getElementById('infectionTimeLabel').textContent = `5s`;
+            document.getElementById('deathCureTimeLabel').textContent = `40s`;
+        }
+
+        setVariables();
 
         function initializeCircles() {
             circles.forEach(circle => {
@@ -193,6 +261,48 @@
 
         movePlane(); // Iniciar o movimento do avião
 
+        // let isAddingAirport = false;
+
+        // function enableAirportAddition() {
+        //     isAddingAirport = !isAddingAirport;
+        //     const button = document.getElementById('addAirportButton');
+        //     if (isAddingAirport) {
+        //         button.textContent = "Clique em um aeroporto para adicionar";
+        //     } else {
+        //         button.textContent = "Adicionar Aeroporto";
+        //     }
+        // }
+
+        // function addAirport(x, y) {
+        //     const newAirport = { x: x, y: y, color: 'purple' };
+        //     airports.push(newAirport);
+        //     path.push(newAirport);
+        //     drawAirports();
+        // }
+
+        // canvas.addEventListener('click', (event) => {
+        //     if (!isAddingAirport) return;
+
+        //     const rect = canvas.getBoundingClientRect();
+        //     const scaleX = canvas.width / rect.width;
+        //     const scaleY = canvas.height / rect.height;
+        //     const mouseX = (event.clientX - rect.left) * scaleX;
+        //     const mouseY = (event.clientY - rect.top) * scaleY;
+
+        //     circles.some(circle => {
+        //         const dx = mouseX - circle.x;
+        //         const dy = mouseY - circle.y;
+        //         const distance = Math.sqrt(dx * dx + dy * dy);
+
+        //         if (distance <= radius && circle.state === 'normal') {
+        //             addAirport(mouseX, mouseY);
+        //             enableAirportAddition();
+        //             return true;
+        //         }
+        //         return false;
+        //     });
+        // });
+
         function infectCircle(circle) {
             if (circle.state === 'normal') {
                 circle.state = 'infected';
@@ -203,7 +313,7 @@
         attemptToCureOrKill();
 
         function propagateInfection(originCircle) {
-            if (originCircle.state !== 'infected') return;
+            if (originCircle.state !== 'infected' || !isInfecting) return;
 
             circles.forEach(circle => {
                 if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius)) {
@@ -229,6 +339,8 @@
         }
 
         canvas.addEventListener('click', (event) => {
+            //if (!isAddingAirport) return;
+
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -332,6 +444,7 @@
         function pauseTime() {
             timeMultiplier = 0;
             planeSpeed = 0;
+            isInfecting = false;
             document.getElementById('pauseButton').disabled = true;
             document.getElementById('resumeButton').disabled = false;
             document.getElementById('fastButton').disabled = false;
@@ -340,6 +453,7 @@
         function resumeTime() {
             timeMultiplier = 1;
             planeSpeed = timeMultiplier;
+            isInfecting = true;
             document.getElementById('pauseButton').disabled = false;
             document.getElementById('resumeButton').disabled = true;
             document.getElementById('fastButton').disabled = false;
@@ -350,6 +464,7 @@
 
         function fastTime() {
             timeMultiplier = 2;
+            isInfecting = true;
             planeSpeed = timeMultiplier;
             document.getElementById('pauseButton').disabled = false;
             document.getElementById('resumeButton').disabled = false;
@@ -362,6 +477,49 @@
             drawAirports();
             timeMultiplier = 0;
         };
+
+        function updateCureChance(value) {
+            cureChance = parseFloat(value) / 10000; // Converte de porcentagem para decimal
+            document.getElementById('cureChanceLabel').textContent = `${(value)}%`;
+        }
+
+        // Função para atualizar a probabilidade de morte, conversão para decimal
+        function updateDeathChance(value) {
+            deathChance = parseFloat(value) / 100000; // Converte de porcentagem para decimal
+            document.getElementById('deathChanceLabel').textContent = `${(value)}%`;
+        }
+
+        // Função para atualizar a probabilidade de infecção (já está correta, mas deixo para consistência)
+        function updateInfectionChance(value) {
+            infectionChance = parseFloat(value) / 100; // Converte de porcentagem para decimal
+            document.getElementById('infectionChanceLabel').textContent = `${value}%`;
+        }
+
+        function updateinfectTime(value) {
+            infectionDelay = value * 1000;
+            document.getElementById("infectionTimeLabel").textContent = `${value}s`;
+        }
+
+        function updatedeathCureTime(value) {
+            cureAndDeathDelay = value * 1000;
+            document.getElementById("deathCureTimeLabel").textContent = `${value}s`;
+        }
+
+        function reset() {
+            circles.forEach(circle => {
+                circle.state = 'normal';
+                circle.timeInfected = 0;
+            });
+
+            setVariables();
+            updateConsole();
+            drawCircles();
+            drawAirports();
+            pauseTime();
+
+            simulatedDate = new Date();
+        }
+
     </script>
 </body>
 

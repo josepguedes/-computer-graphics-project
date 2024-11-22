@@ -25,12 +25,12 @@ canvas {
 #slideMenu {
     position: fixed;
     top: 0;
-    left: -20vw; /* O menu começa fora da tela */
-    width: 20vw; /* O menu terá 20% da largura da tela */
+    left: -23vw; /* O menu começa fora da tela */
+    width: 23vw; /* O menu terá 20% da largura da tela */
     height: 100%;
     background-color: rgba(0, 0, 0, 0.6);
     transition: left 0.5s ease;
-    padding: 1.5vw;
+    padding: 0.5vh 1.5vw 1.5vh 1.5vw;
     box-sizing: border-box;
     z-index: 100;
 }
@@ -50,6 +50,7 @@ canvas {
     color: white;
     font-size: 1.5vw;
     cursor: pointer;
+    padding-right: 0.5vw;
 }
 
 #slideMenu.active #closeButton {
@@ -96,21 +97,45 @@ canvas {
 }
 
 /* Estilos do console no menu */
-#console {
+#console, #settings {
     color: white;
     font-family: Arial, sans-serif;
-    font-size: 1.2vw;
+    font-size: 1.1vw;
     user-select: none;
 }
 
-#console #consoleTitle {
-    font-size: 2.2vw;
-    padding-bottom: 3.5vh;
-    font-weight: bold;
+#consoleTitle, #probabilitiesTitle, #timeSettingsTitle{
+    font-size: 1.8vw;
+    margin: 2vh 0 2vh 0;
+    font-weight: bolder;
 }
 
-#console div {
-    padding-bottom: 1.2vh;
+#console div, #settings div {
+    margin-bottom: 1.2vh;
+}
+
+input[type="range"] {
+    width: 80%; /* Ajuste dinâmico do tamanho */
+    margin-top: 2.5vh;
+    margin-bottom: 1vh; /* Adiciona uma margem superior para os inputs */
+    -webkit-appearance: none;
+    appearance: none;
+    height: 0.4vh; /* Ajuste a espessura do slider */
+    background: rgba(255, 255, 255, 0.3);
+    border-radius: 0.5vw;
+    transition: width 0.3s ease; /* Transição suave */
+}
+
+/* Estilo para a bolinha do input (slider) */
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 0.8vw; /* Tamanho fixo da bolinha */
+    height: 0.8vw;
+    background: #d7d7d7;
+    border-radius: 1vw;
+    cursor: pointer;
+    transition: background 0.3s ease;
 }
 
 /* Estilo do temporizador */
@@ -164,4 +189,65 @@ canvas {
 #menuTimer button:disabled {
     background-color: #777;
     cursor: default;
+}
+
+/* Estilo do botão avião */
+.airplane-button {
+    background-color: #a5a5a5; /* Cor de fundo */
+    color: white; /* Cor do texto (ícone) */
+    border: none; /* Sem borda */
+    padding: 1vh; /* Padding ajustado com unidades vh e vw */
+    font-size: 1vw; /* Tamanho da fonte em vw (menor) */
+    cursor: pointer; /* Mostra o cursor de mão ao passar em cima */
+    border-radius: 0.5vw; /* Bordas arredondadas em vw */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 15vw; /* Largura do botão ocupando uma parte proporcional da tela (ajustado com vw) */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Animação de cor e escala */
+}
+
+/* Estilo do ícone dentro do botão */
+.airplane-button i {
+    font-size: 1.2vw; /* Tamanho do ícone ajustado para a escala */
+    margin-right: 0.5vw; /* Espaçamento entre o ícone e o texto em vw */
+}
+
+/* Estilo ao passar o mouse sobre o botão */
+.airplane-button:hover {
+    background-color: #797979; /* Cor de fundo muda quando o mouse passa por cima */
+    transform: scale(1.05); /* Leve aumento do botão ao passar o mouse */
+}
+
+/* Estilo quando o botão é pressionado */
+.airplane-button:active {
+    background-color: #696969; /* Cor de fundo quando o botão é pressionado */
+    transform: scale(0.98); /* Leve redução do tamanho ao clicar */
+}
+
+/* Estilo para o botão de reset */
+.reset-button {
+    background-color: #f44336; /* Cor de fundo vermelha */
+    color: white; /* Cor do texto */
+    border: none; /* Sem borda */
+    padding: 1.5vh; /* Ajusta o espaçamento interno com unidades de viewport */
+    font-size: 1vw; /* Tamanho da fonte ajustado com vw */
+    cursor: pointer; /* Cursor de mão ao passar o mouse */
+    border-radius: 1vh; /* Bordas arredondadas, ajustadas com vh */
+    position: absolute; /* Posiciona o botão em um lugar fixo */
+    bottom: 2vh; /* 2vh do fundo */
+    left: 1.5vw; /* Considerando o padding do menu */
+    right: 1.5vw; /* Considerando o padding do menu */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Animação suave */
+}
+
+.reset-button:hover {
+    background-color: #d32f2f; /* Cor mais escura ao passar o mouse */
+    transform: scale(1.05); /* Leve aumento no tamanho ao passar o mouse */
+}
+
+/* Efeito de click para o botão de reset */
+.reset-button:active {
+    background-color: #d32f2f; /* Cor mais escura quando pressionado */
+    transform: scale(0.98); /* Leve redução ao clicar */
 }
