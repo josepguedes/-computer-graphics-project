@@ -25,10 +25,10 @@ canvas {
 #slideMenu {
     position: fixed;
     top: 0;
-    left: -23vw; /* O menu começa fora da tela */
-    width: 23vw; /* O menu terá 20% da largura da tela */
+    left: -25vw; /* O menu começa fora da tela */
+    width: 25vw; /* O menu terá 20% da largura da tela */
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.6);
+    background-color: rgba(0 0 0 / 60%);
     transition: left 0.5s ease;
     padding: 0.5vh 1.5vw 1.5vh 1.5vw;
     box-sizing: border-box;
@@ -58,7 +58,7 @@ canvas {
 }
 
 #closeButton:hover {
-    color: #757575;
+    color: #dd3131;
 }
 
 .menu-button {
@@ -70,20 +70,30 @@ canvas {
     opacity: 1;
 }
 
+/* Estilo do botão do menu */
 .menu-button button {
-    background-color: #333;
-    border: none;
-    color: white;
-    padding: 1vw;
-    font-size: 1vw;
-    border-radius: 0.5vw;
-    cursor: pointer;
-    transition: background-color 0.3s;
+    background-color: #333; /* Cor de fundo original */
+    border: none; /* Sem borda */
+    color: white; /* Cor do texto */
+    padding: 1vw; /* Espaçamento interno */
+    font-size: 1vw; /* Tamanho da fonte */
+    border-radius: 0.5vw; /* Bordas arredondadas */
+    cursor: pointer; /* Cursor de mão ao passar o mouse */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Animação suave */
 }
 
+/* Hover no botão do menu */
 .menu-button button:hover {
-    background-color: #555;
+    background-color: #555; /* Cor mais clara ao passar o mouse */
+    transform: scale(1.05); /* Leve aumento ao passar o mouse */
 }
+
+/* Clique no botão do menu */
+.menu-button button:active {
+    background-color: #222; /* Cor mais escura ao pressionar */
+    transform: scale(0.98); /* Leve redução ao clicar */
+}
+
 
 .menu-button.hidden {
     opacity: 0;
@@ -104,10 +114,10 @@ canvas {
     user-select: none;
 }
 
-#consoleTitle, #probabilitiesTitle, #timeSettingsTitle{
-    font-size: 1.8vw;
-    margin: 2vh 0 2vh 0;
-    font-weight: bolder;
+#consoleTitle, #probabilitiesTitle, #timeSettingsTitle, #planesTitle{
+    font-size: 1.5vw;
+    margin: 1.5vh 0 1.5vh 0;
+    font-weight:800;
 }
 
 #console div, #settings div {
@@ -167,67 +177,105 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 /* Estilo dos botões */
+/* Estilo dos botões do timer */
 #menuTimer button {
-    background-color: #333;
-    border: none;
-    color: white;
+    background-color: #5cbdff; /* Azul claro */
+    border: none; /* Sem borda */
+    color: white; /* Cor do texto */
     padding: 0.3vw 0.2vh; /* Reduzido para tornar os botões mais compactos */
     font-size: 0.8vw; /* Font size reduzido */
-    border-radius: 0.5vw;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    display: flex;
+    border-radius: 0.5vw; /* Bordas arredondadas */
+    cursor: pointer; /* Cursor de mão ao passar o mouse */
+    display: flex; /* Alinhamento central do conteúdo */
     justify-content: center;
     align-items: center;
-    width: 50%; /* Faz com que o botão tenha uma largura igual e ajustada */
+    width: 50%; /* Faz com que o botão tenha uma largura ajustada */
+    flex: 1; /* Todos os botões ocupam o mesmo espaço */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Animação suave */
 }
 
+/* Hover no botão do timer */
 #menuTimer button:hover {
-    background-color: #555;
+    background-color: #489bd3; /* Azul mais escuro */
+    transform: scale(1.05); /* Leve aumento ao passar o mouse */
 }
 
+/* Clique no botão do timer */
+#menuTimer button:active {
+    background-color: #317aa4; /* Azul ainda mais escuro */
+    transform: scale(0.98); /* Leve redução ao pressionar */
+}
+
+/* Botão desabilitado */
 #menuTimer button:disabled {
-    background-color: #777;
+    background-color: #45577c; /* Cinza escuro para botões desativados */
     cursor: default;
+    transform: none; /* Remover animação ao pressionar */
 }
 
-/* Estilo do botão avião */
-.airplane-button {
-    background-color: #a5a5a5; /* Cor de fundo */
-    color: white; /* Cor do texto (ícone) */
-    border: none; /* Sem borda */
-    padding: 1vh; /* Padding ajustado com unidades vh e vw */
-    font-size: 1vw; /* Tamanho da fonte em vw (menor) */
-    cursor: pointer; /* Mostra o cursor de mão ao passar em cima */
-    border-radius: 0.5vw; /* Bordas arredondadas em vw */
+/* Container para os botões */
+#airportControls {
     display: flex;
+    justify-content: space-between; /* Espaço uniforme entre os botões */
     align-items: center;
-    justify-content: center;
-    width: 15vw; /* Largura do botão ocupando uma parte proporcional da tela (ajustado com vw) */
-    transition: background-color 0.3s ease, transform 0.2s ease; /* Animação de cor e escala */
+    width: 100%; /* O container ocupa toda a largura disponível */
+    margin-top: 1vh; /* Margem superior para separação */
+    gap: 0.5vw; /* Espaço entre os botões */
 }
 
-/* Estilo do ícone dentro do botão */
-.airplane-button i {
-    font-size: 1.2vw; /* Tamanho do ícone ajustado para a escala */
-    margin-right: 0.5vw; /* Espaçamento entre o ícone e o texto em vw */
+/* Estilo do botão de adicionar aeroporto */
+.add-airport-button {
+    background-color: #4CAF50; /* Cor verde */
+    color: white; /* Cor do texto */
+    border: none; /* Sem borda */
+    padding: 1vh; /* Padding ajustado */
+    font-size: 1vw; /* Tamanho da fonte */
+    border-radius: 0.5vw; /* Bordas arredondadas */
+    cursor: pointer; /* Cursor de mão ao passar o mouse */
+    flex: 1; /* Os botões ocupam o mesmo espaço */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Animação suave */
 }
 
-/* Estilo ao passar o mouse sobre o botão */
-.airplane-button:hover {
-    background-color: #797979; /* Cor de fundo muda quando o mouse passa por cima */
-    transform: scale(1.05); /* Leve aumento do botão ao passar o mouse */
+/* Hover no botão de adicionar aeroporto */
+.add-airport-button:hover {
+    background-color: #45A049; /* Verde mais escuro */
+    transform: scale(1.05); /* Leve aumento ao passar o mouse */
 }
 
-/* Estilo quando o botão é pressionado */
-.airplane-button:active {
-    background-color: #696969; /* Cor de fundo quando o botão é pressionado */
-    transform: scale(0.98); /* Leve redução do tamanho ao clicar */
+/* Clique no botão de adicionar aeroporto */
+.add-airport-button:active {
+    background-color: #388E3C; /* Verde mais escuro ao pressionar */
+    transform: scale(0.98); /* Leve redução ao pressionar */
+}
+
+/* Estilo do botão de remover aeroporto */
+.remove-airport-button {
+    background-color: #147fff; /* Cor vermelha */
+    color: white; /* Cor do texto */
+    border: none; /* Sem borda */
+    padding: 1vh; /* Padding ajustado */
+    font-size: 1vw; /* Tamanho da fonte */
+    border-radius: 0.5vw; /* Bordas arredondadas */
+    cursor: pointer; /* Cursor de mão ao passar o mouse */
+    flex: 1; /* Os botões ocupam o mesmo espaço */
+    transition: background-color 0.3s ease, transform 0.2s ease; /* Animação suave */
+}
+
+/* Hover no botão de remover aeroporto */
+.remove-airport-button:hover {
+    background-color: #136ddb; /* Vermelho mais escuro */
+    transform: scale(1.05); /* Leve aumento ao passar o mouse */
+}
+
+/* Clique no botão de remover aeroporto */
+.remove-airport-button:active {
+    background-color: #1658aa; /* Vermelho ainda mais escuro */
+    transform: scale(0.98); /* Leve redução ao pressionar */
 }
 
 /* Estilo para o botão de reset */
 .reset-button {
-    background-color: #f44336; /* Cor de fundo vermelha */
+    background-color: #ff8e07; /* Cor de fundo vermelha */
     color: white; /* Cor do texto */
     border: none; /* Sem borda */
     padding: 1.5vh; /* Ajusta o espaçamento interno com unidades de viewport */
@@ -242,12 +290,52 @@ input[type="range"]::-webkit-slider-thumb {
 }
 
 .reset-button:hover {
-    background-color: #d32f2f; /* Cor mais escura ao passar o mouse */
+    background-color: #e27c00; /* Cor mais escura ao passar o mouse */
     transform: scale(1.05); /* Leve aumento no tamanho ao passar o mouse */
 }
 
 /* Efeito de click para o botão de reset */
 .reset-button:active {
-    background-color: #d32f2f; /* Cor mais escura quando pressionado */
+    background-color: #d36b0a; /* Cor mais escura quando pressionado */
     transform: scale(0.98); /* Leve redução ao clicar */
+}
+
+/* Estilo da legenda */
+#legend {
+    position: absolute;
+    bottom: 2vh; /* Espaçamento do fundo */
+    right: 1vw; /* Espaçamento da direita */
+    background-color: rgba(0, 0, 0, 0.603); /* Fundo semitransparente */
+    color: white;
+    font-family: Arial, sans-serif;
+    padding: 1vw; /* Espaçamento interno */
+    border-radius: 0.5vw; /* Bordas arredondadas */
+    font-size: 1vw; /* Tamanho do texto */
+    z-index: 10; /* Certifique-se de que fique acima de outros elementos */
+    max-width: 15vw;
+    box-sizing: border-box;
+}
+
+/* Título da legenda */
+#legend h3 {
+    font-size: 1.2vw;
+    margin-bottom: 1vh; /* Espaçamento inferior do título */
+    margin-top: 0;
+    text-align: center; /* Centraliza o texto */
+}
+
+/* Item da legenda */
+.legend-item {
+    display: flex;
+    align-items: center;
+    margin-bottom: 0.5vh; /* Espaçamento entre os itens */
+}
+
+/* Cor da legenda */
+.legend-color {
+    width: 1vw; /* Tamanho da cor */
+    height: 1vw;
+    border-radius: 50%; /* Faz o elemento ficar redondo */
+    margin-right: 0.5vw; /* Espaçamento entre o círculo e o texto */
+    flex-shrink: 0; /* Garante que o círculo não se deforme */
 }

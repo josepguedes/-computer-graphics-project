@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="pt">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,7 +22,6 @@
         </div>
     
         <div id="settings">
-            <!-- Seção de Probabilidades -->
             <div id="probabilities">
                 <h3 id="probabilitiesTitle">Probabilidades</h3>
                 <div class="setting-item">
@@ -33,8 +31,8 @@
                 </div>
                 <div class="setting-item">
                     <label for="deathChance">Probabilidade de Morte:</label>
-                    <input type="range" id="deathChance" min="0" max="100" step="0.1" value="2.5" oninput="updateDeathChance(value)">
-                    <span id="deathChanceLabel">2.5%</span>
+                    <input type="range" id="deathChance" min="0" max="100" step="0.1" value="8" oninput="updateDeathChance(value)">
+                    <span id="deathChanceLabel">8%</span>
                 </div>
                 <div class="setting-item">
                     <label for="cureChance">Probabilidade de Cura:</label>
@@ -43,28 +41,35 @@
                 </div>
             </div>
     
-            <!-- Seção de Tempo -->
             <div id="timeSettings">
                 <h3 id="timeSettingsTitle">Tempo</h3>
                 <div class="setting-item">
                     <label for="infectTime">Tempo para começar a Infecção:</label>
-                    <input type="range" id="infectTime" min="1" max="15" step="0.5" value="5" oninput="updateinfectTime(value)">
+                    <input type="range" id="infectTime" min="1" max="15" step="0.5" value="5" onchange="updateinfectTime(value)">
                     <span id="infectionTimeLabel">5s</span>
                 </div>                
                 <div class="setting-item">
                     <label for="cureTimer">Tempo para começar a Morte/Cura:</label>
-                    <input type="range" id="deathCureTime" min="1" max="60" step="0.5" value="40" oninput="updatedeathCureTime(value)">
+                    <input type="range" id="deathCureTime" min="1" max="60" step="0.5" value="40" onchange="updatedeathCureTime(value)">
                     <span id="deathCureTimeLabel">40s</span>
                 </div>
             </div>
     
-            <button id="airplaneButton" class="airplane-button" onclick="movePlane()">
-                &nbsp;<i id="planeIcon" class="fas fa-plane"></i>&nbsp;Adicionar Aeroporto
-            </button>
-    
             <button id="resetButton" class="reset-button" onclick="reset()">
                 <i class="fas fa-undo"></i>&nbsp;&nbsp;Resetar
             </button>
+
+            <h3 id="planesTitle">Aviões</h3>
+            <div id="airportControls">
+                <button id="airplaneButton" class="add-airport-button" onclick="toggleAddPlaneMode()">
+                    &nbsp;<i id="planeIcon" class="fas fa-plane"></i>&nbsp;Adicionar Aeroporto
+                </button>
+    
+                <button id="removeAirportButton" class="remove-airport-button" onclick="toggleRemoveAirportMode()">
+                    &nbsp;<i class="fas fa-minus-circle"></i>&nbsp;Remover Aeroporto
+                </button>
+            </div>
+            
         </div>
     </div>
     
@@ -87,6 +92,30 @@
             <i class="fas fa-forward"></i>
         </button>
     </div>
+
+    <div id="legend">
+        <h3>Legenda</h3>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: white;"></span>
+            <span>Pessoas Saudáveis</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: red;"></span>
+            <span>Pessoas Infetadas</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: black;"></span>
+            <span>Pessoas Mortas</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: orange;"></span>
+            <span>Pessoas Curadas</span>
+        </div>
+        <div class="legend-item">
+            <span class="legend-color" style="background-color: blue;"></span>
+            <span>Aeroportos</span>
+        </div>
+    </div>    
     
     <canvas id="Canvas" width="1024" height="580"></canvas>    
 
@@ -95,10 +124,11 @@
         const canvas = document.getElementById('Canvas');
         const ctx = canvas.getContext('2d');
 
-        let radius = 2.5;
-        let infectionRadius = 9;
+        let radius = 2.5, infectionRadius = 9;
         
         let infectionChance, infectionDelay, cureChance, deathChance, cureAndDeathDelay, timeMultiplier, isInfecting;
+
+        let planeX, planeY, currentAirportIndex, planeSpeed, isAddingAirport, isRemovingAirport;
 
         let states = {
             normal: { color: "white" },
@@ -107,39 +137,53 @@
             dead: { color: "black" }
         };
 
-        let airports = [];
+        let airports = [], infectionIntervals = [], path = [];
+
 
         function setVariables(){
             infectionChance = 0.4;
             infectionDelay = 5000;
 
-            cureChance = 0.002;
-            deathChance = 0.00025;
+            cureChance = 0.2;
+            deathChance = 0.05;
 
             cureAndDeathDelay = 40000;
 
             timeMultiplier = 1;
 
             isInfecting = false;
+            
+            infectionIntervals.forEach(intervalId => clearInterval(intervalId));
+            infectionIntervals = [];
 
             airports = [
-                { x: 390, y: 350, color: 'red' },   // Aeroporto 1
-                { x: 480, y: 200, color: 'blue' },  // Aeroporto 2
-                { x: 520, y: 380, color: 'green' }, // Aeroporto 3
-                { x: 770, y: 450, color: 'yellow' },// Aeroporto 4
-                { x: 770, y: 150, color: 'black' } // Aeroporto 5
+                { x: 390, y: 350, color: 'red' },   
+                { x: 480, y: 200, color: 'blue' },  
+                { x: 520, y: 380, color: 'green' }, 
+                { x: 770, y: 450, color: 'yellow' },
+                { x: 770, y: 150, color: 'black' } 
             ];
 
-            document.getElementById('infectionChance').value = 40;
-            document.getElementById('deathChance').value = 2.5;
-            document.getElementById('cureChance').value = 20;
+            planeX = airports[0].x; 
+            planeY = airports[0].y;
+
+            currentAirportIndex = 0;
+
+            planeSpeed = 1;
+
+            isAddingAirport = false;
+            isRemovingAirport = false;
+
+            document.getElementById('infectionChance').value = `${infectionChance * 100}`;
+            document.getElementById('deathChance').value = `${deathChance * 100}`;
+            document.getElementById('cureChance').value = `${cureChance * 100}`;
 
             document.getElementById('infectTime').value = 5;
             document.getElementById('deathCureTime').value = 40;
             
-            document.getElementById('infectionChanceLabel').textContent = `40%`;
-            document.getElementById('deathChanceLabel').textContent = `2.5%`;
-            document.getElementById('cureChanceLabel').textContent = `20%`;
+            document.getElementById('infectionChanceLabel').textContent = `${infectionChance * 100}%`;
+            document.getElementById('deathChanceLabel').textContent = `${deathChance * 100}%`;
+            document.getElementById('cureChanceLabel').textContent = `${cureChance * 100}%`;
 
             document.getElementById('infectionTimeLabel').textContent = `5s`;
             document.getElementById('deathCureTimeLabel').textContent = `40s`;
@@ -149,31 +193,21 @@
 
         function initializeCircles() {
             circles.forEach(circle => {
-                circle.timeInfected = 0; // Adiciona a propriedade timeInfected em cada círculo
+                circle.timeInfected = 0;
             });
         }
 
         initializeCircles();
 
-        let planeX = airports[0].x; // Posição inicial do avião (primeiro aeroporto)
-        let planeY = airports[0].y;
-        let currentAirportIndex = 0; // Índice do aeroporto atual
-        let planeSpeed = 1;
-
-        // Trajeto cíclico (ida e volta)
-        let path = [];
-
-        // Adiciona os aeroportos na ordem de ida
         for (let i = 0; i < airports.length; i++) {
             path.push(airports[i]);
         }
 
-        // Adiciona os aeroportos na ordem de volta, sem o primeiro e o último aeroporto para evitar duplicados
         for (let i = airports.length - 2; i > 0; i--) {
             path.push(airports[i]);
         }
 
-        let nextAirportIndex = 1; // Índice do próximo aeroporto no trajeto
+        let nextAirportIndex = 1;
 
         function drawAirports() {
             airports.forEach(airport => {
@@ -228,28 +262,25 @@
 
                         if (distance <= planeSpeed) {
                             currentAirportIndex = nextAirportIndex;
-                            nextAirportIndex = (nextAirportIndex + 1) % path.length; // Avançar no percurso
+                            nextAirportIndex = (nextAirportIndex + 1) % path.length;
                         }
                     }
 
-                    // Desenhar o avião com ajuste de rotação e espelhamento
                     ctx.save();
                     const angle = Math.atan2(dy, dx);
 
-                    // Verificar se o avião está indo de volta
                     if (dx < 0) {
                         ctx.translate(planeX, planeY);
-                        ctx.rotate(angle + Math.PI); // Adiciona 180° para inverter a direção
-                        ctx.scale(-1, 1); // Inverter a imagem horizontalmente
+                        ctx.rotate(angle + Math.PI);
+                        ctx.scale(-1, 1); 
                     } else {
                         ctx.translate(planeX, planeY);
-                        ctx.rotate(angle); // Mantém a rotação normal
+                        ctx.rotate(angle);
                     }
 
                     const planeWidth = plane.width * scale;
                     const planeHeight = plane.height * scale;
 
-                    // Desenhar a imagem do avião com rotação e espelhamento aplicados
                     ctx.drawImage(plane, -planeWidth / 2, -planeHeight / 2, planeWidth, planeHeight);
                     ctx.restore();
 
@@ -259,88 +290,147 @@
             };
         }
 
-        movePlane(); // Iniciar o movimento do avião
+        movePlane();
 
-        // let isAddingAirport = false;
+        function toggleAddPlaneMode() {
+            // Desativa o modo de remover aeroporto se estiver ativo
+            if (isRemovingAirport) {
+                isRemovingAirport = false;
+                const removeAirportButton = document.getElementById('removeAirportButton');
+                removeAirportButton.style.backgroundColor = "";
+                removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
+            }
 
-        // function enableAirportAddition() {
-        //     isAddingAirport = !isAddingAirport;
-        //     const button = document.getElementById('addAirportButton');
-        //     if (isAddingAirport) {
-        //         button.textContent = "Clique em um aeroporto para adicionar";
-        //     } else {
-        //         button.textContent = "Adicionar Aeroporto";
-        //     }
-        // }
-
-        // function addAirport(x, y) {
-        //     const newAirport = { x: x, y: y, color: 'purple' };
-        //     airports.push(newAirport);
-        //     path.push(newAirport);
-        //     drawAirports();
-        // }
-
-        // canvas.addEventListener('click', (event) => {
-        //     if (!isAddingAirport) return;
-
-        //     const rect = canvas.getBoundingClientRect();
-        //     const scaleX = canvas.width / rect.width;
-        //     const scaleY = canvas.height / rect.height;
-        //     const mouseX = (event.clientX - rect.left) * scaleX;
-        //     const mouseY = (event.clientY - rect.top) * scaleY;
-
-        //     circles.some(circle => {
-        //         const dx = mouseX - circle.x;
-        //         const dy = mouseY - circle.y;
-        //         const distance = Math.sqrt(dx * dx + dy * dy);
-
-        //         if (distance <= radius && circle.state === 'normal') {
-        //             addAirport(mouseX, mouseY);
-        //             enableAirportAddition();
-        //             return true;
-        //         }
-        //         return false;
-        //     });
-        // });
-
-        function infectCircle(circle) {
-            if (circle.state === 'normal') {
-                circle.state = 'infected';
-                drawCircles();
+            // Ativa/desativa o modo de adicionar aeroporto
+            isAddingAirport = !isAddingAirport;
+            const addPlaneButton = document.getElementById('airplaneButton');
+            
+            if (isAddingAirport) {
+                addPlaneButton.innerHTML = "<i class='fas fa-times'></i>&nbsp;Cancelar";
+                addPlaneButton.style.backgroundColor = "#da4444";
+            } else {
+                addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
+                addPlaneButton.style.backgroundColor = "";
             }
         }
 
-        attemptToCureOrKill();
+        function toggleRemoveAirportMode() {
+            // Desativa o modo de adicionar aeroporto se estiver ativo
+            if (isAddingAirport) {
+                isAddingAirport = false;
+                const addPlaneButton = document.getElementById('airplaneButton');
+                addPlaneButton.style.backgroundColor = "";
+                addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
+            }
 
-        function propagateInfection(originCircle) {
-            if (originCircle.state !== 'infected' || !isInfecting) return;
+            // Ativa/desativa o modo de remover aeroporto
+            isRemovingAirport = !isRemovingAirport;
+            const removeAirportButton = document.getElementById('removeAirportButton');
 
-            circles.forEach(circle => {
-                if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius)) {
-                    const infectionInterval = setInterval(() => {
-                        if (timeMultiplier === 0) return; // Não propaga enquanto o tempo estiver pausado
-
-                        if (Math.random() < infectionChance) {
-                            infectCircle(circle);
-                            propagateInfection(circle);
-                            clearInterval(infectionInterval); // Propagação ocorre uma vez por círculo
-                        }
-                    }, infectionDelay / timeMultiplier);
-                }
-            });
+            if (isRemovingAirport) {
+                removeAirportButton.innerHTML = "<i class='fas fa-times'></i>&nbsp;Cancelar";
+                removeAirportButton.style.backgroundColor = "#da4444";
+            } else {
+                removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
+                removeAirportButton.style.backgroundColor = "";
+            }
         }
 
+        function toggleMenu() {
+            const slideMenu = document.getElementById("slideMenu");
+            const menuButton = document.getElementById("menuButton");
+            const menuIcon = document.getElementById("menuIcon");
+            const closeButton = document.getElementById("closeButton");
 
-        function isNeighbor(circle1, circle2, baseDistance) {
-            const dx = circle1.x - circle2.x;
-            const dy = circle1.y - circle2.y;
-            const distance = baseDistance + (Math.random() * 5 - 2.5);
-            return Math.sqrt(dx * dx + dy * dy) <= distance;
+            slideMenu.classList.toggle("active");
+            menuButton.classList.toggle("hidden");
+            menuIcon.classList.toggle("fa-bars");
+            menuIcon.classList.toggle("fa-times");
+
+            if (slideMenu.classList.contains("active")) {
+                isAddingAirport = false;
+                isRemovingAirport = false;
+                const addPlaneButton = document.getElementById('airplaneButton');
+                addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
+                addPlaneButton.style.backgroundColor = "";
+
+                const removeAirportButton = document.getElementById('removeAirportButton');
+                removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
+                removeAirportButton.style.backgroundColor = "";
+            }
         }
 
         canvas.addEventListener('click', (event) => {
-            //if (!isAddingAirport) return;
+            if (isAddingAirport) {
+                handleAddAirport(event); // Chama a função de adicionar aeroporto
+                return; // Impede que outras ações sejam executadas
+            }
 
+            if (isRemovingAirport) {
+                handleRemoveAirport(event); // Chama a função de remover aeroporto
+                return; // Impede que outras ações sejam executadas
+            }
+
+            handleInfection(event);
+        });
+
+        function handleAddAirport(event) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mouseX = (event.clientX - rect.left) * scaleX;
+            const mouseY = (event.clientY - rect.top) * scaleY;
+
+            const targetCircle = circles.find(circle => {
+                const dx = mouseX - circle.x;
+                const dy = mouseY - circle.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance <= radius;
+            });
+
+            if (targetCircle) {
+                const newPlane = { x: targetCircle.x, y: targetCircle.y, color: 'brown' };
+                airports.push(newPlane);
+                path.push(newPlane);
+                drawAirports();
+
+                setTimeout(() => {
+                    toggleAddPlaneMode(); // Desativa o modo de adicionar aeroporto
+                }, 50); // Pequeno delay para evitar ações concorrentes
+            } else {
+                alert("Só pode adicionar aeroportos sobre círculos");
+            }
+        }
+
+        function handleRemoveAirport(event) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const mouseX = (event.clientX - rect.left) * scaleX;
+            const mouseY = (event.clientY - rect.top) * scaleY;
+
+            const airportIndex = airports.findIndex(airport => {
+                const dx = mouseX - airport.x;
+                const dy = mouseY - airport.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+                return distance <= 7;
+            });
+
+            if (airportIndex !== -1) {
+                airports.splice(airportIndex, 1);
+                path.splice(airportIndex, 1);
+                drawAirports();
+
+                // Espera um pequeno atraso para desativar o modo
+                setTimeout(() => {
+                    toggleRemoveAirportMode(); // Desativa o modo de remover aeroporto
+                }, 50); // Pequeno delay para evitar ações concorrentes
+            } else {
+                alert("Clique em um aeroporto para removê-lo");
+            }
+        }
+
+        function handleInfection(event) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
             const scaleY = canvas.height / rect.height;
@@ -368,40 +458,70 @@
                 }
                 return false;
             });
-        });
-
-
-        function attemptToCureOrKill() {
-            circles.forEach(circle => {
-                if(timeMultiplier === 0) return;
-
-                if (circle.state === 'infected') {
-                    circle.timeInfected += 100 * (timeMultiplier || 1); // Atualiza considerando o multiplicador
-
-                    if (circle.timeInfected >= cureAndDeathDelay) {
-                        const neighbors = circles.filter(neighbor =>
-                            neighbor.state === 'infected' &&
-                            isNeighbor(circle, neighbor, infectionRadius)
-                        );
-
-                        const deathProbability = deathChance + Math.min(1, neighbors.length * 0.001);
-                        const cureProbability = cureChance + Math.min(1, neighbors.length * 0.001);
-
-                        if (Math.random() < deathProbability) {
-                            circle.state = 'dead';
-                        } else if (Math.random() < cureProbability) {
-                            circle.state = 'cured';
-                        }
-
-                        drawCircles(); // Atualiza o desenho
-                    }
-                }
-            });
-
-            // Rechamar a função dinamicamente
-            setTimeout(attemptToCureOrKill, 1000 / (timeMultiplier || 1));
         }
 
+        function infectCircle(circle) {
+            if (circle.state === 'normal') {
+                circle.state = 'infected';
+                drawCircles();
+            }
+        }
+
+        attemptToCureOrKill();
+
+        function propagateInfection(originCircle) {
+            if (originCircle.state !== 'infected' || !isInfecting) return;
+
+            if (timeMultiplier != 0) circles.forEach(circle => {
+                if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius) && timeMultiplier != 0) {
+                    const infectionInterval = setInterval(() => {
+                        if (parseFloat((Math.random() * 0.9 + 0.1).toFixed(2)) < infectionChance) {
+                            infectCircle(circle);
+                            propagateInfection(circle);
+                            clearInterval(infectionInterval);
+                            infectionIntervals = infectionIntervals.filter(id => id !== infectionInterval);
+                        }
+                    }, infectionDelay / timeMultiplier);
+
+                    infectionIntervals.push(infectionInterval);
+                }
+            });
+        }
+
+        function isNeighbor(circle1, circle2, baseDistance) {
+            const dx = circle1.x - circle2.x;
+            const dy = circle1.y - circle2.y;
+            const distance = baseDistance + (Math.random() * 5 - 2.5);
+            return Math.sqrt(dx * dx + dy * dy) <= distance;
+        }
+
+        function attemptToCureOrKill() {
+            if (timeMultiplier != 0) {
+                circles.forEach(circle => {
+                    if (circle.state === 'infected') {
+                        circle.timeInfected += 1000 * (timeMultiplier || 1);
+
+                        if (circle.timeInfected >= cureAndDeathDelay) {
+                            const random = Math.random(); // Gera um valor entre 0 e 1
+
+                            // Define os intervalos baseados nas chances
+                            const deathThreshold = deathChance; // Exemplo: 0.08
+                            const cureThreshold = deathThreshold + cureChance; // Exemplo: 0.08 + 0.2 = 0.28
+
+                            if (random <= deathThreshold) {
+                                circle.state = 'dead'; // 8% de chance
+                            } else if (random <= cureThreshold) {
+                                circle.state = 'cured'; // 20% de chance
+                            }
+
+                            drawCircles(); // Atualiza a exibição
+                        }
+                    }
+                });
+            }
+
+            setTimeout(attemptToCureOrKill, 1500 / (timeMultiplier || 1));
+        }
 
         function updateConsole() {
             const healthy = circles.filter(c => c.state === 'normal').length;
@@ -413,18 +533,6 @@
             document.getElementById('infectedCount').textContent = `Pessoas Infetadas: ${(infected / circles.length * 100).toFixed(2)}%`;
             document.getElementById('deadCount').textContent = `Pessoas Mortas: ${(dead / circles.length * 100).toFixed(2)}%`;
             document.getElementById('curedCount').textContent = `Pessoas Curadas: ${(cured / circles.length * 100).toFixed(2)}%`;
-        }
-
-        function toggleMenu() {
-            const slideMenu = document.getElementById("slideMenu");
-            const menuButton = document.getElementById("menuButton");
-            const menuIcon = document.getElementById("menuIcon");
-            const closeButton = document.getElementById("closeButton");
-
-            slideMenu.classList.toggle("active");
-            menuButton.classList.toggle("hidden");
-            menuIcon.classList.toggle("fa-bars");
-            menuIcon.classList.toggle("fa-times");
         }
 
         let simulatedDate = new Date();
@@ -457,9 +565,6 @@
             document.getElementById('pauseButton').disabled = false;
             document.getElementById('resumeButton').disabled = true;
             document.getElementById('fastButton').disabled = false;
-
-            // Recalcula propagação de eventos ao retomar
-            attemptToCureOrKill();
         }
 
         function fastTime() {
@@ -479,19 +584,35 @@
         };
 
         function updateCureChance(value) {
-            cureChance = parseFloat(value) / 10000; // Converte de porcentagem para decimal
+            cureChance = parseFloat(value) / 100;
+
+            // Garantir que a soma de cureChance e deathChance não ultrapasse 100%
+            const remainingPercentage = 1 - cureChance;
+            if (deathChance > remainingPercentage) {
+                deathChance = remainingPercentage;
+                document.getElementById('deathChance').value = (deathChance * 100).toFixed(0);
+                document.getElementById('deathChanceLabel').textContent = `${(deathChance * 100).toFixed(0)}%`;
+            }
+
             document.getElementById('cureChanceLabel').textContent = `${(value)}%`;
         }
 
-        // Função para atualizar a probabilidade de morte, conversão para decimal
         function updateDeathChance(value) {
-            deathChance = parseFloat(value) / 100000; // Converte de porcentagem para decimal
+            deathChance = parseFloat(value) / 100;
+
+            // Garantir que a soma de deathChance e cureChance não ultrapasse 100%
+            const remainingPercentage = 1 - deathChance;
+            if (cureChance > remainingPercentage) {
+                cureChance = remainingPercentage;
+                document.getElementById('cureChance').value = (cureChance * 100).toFixed(0);
+                document.getElementById('cureChanceLabel').textContent = `${(cureChance * 100).toFixed(0)}%`;
+            }
+
             document.getElementById('deathChanceLabel').textContent = `${(value)}%`;
         }
 
-        // Função para atualizar a probabilidade de infecção (já está correta, mas deixo para consistência)
         function updateInfectionChance(value) {
-            infectionChance = parseFloat(value) / 100; // Converte de porcentagem para decimal
+            infectionChance = parseFloat(value) / 100;
             document.getElementById('infectionChanceLabel').textContent = `${value}%`;
         }
 
@@ -506,21 +627,33 @@
         }
 
         function reset() {
+            // Resetando os estados e variáveis
             circles.forEach(circle => {
                 circle.state = 'normal';
                 circle.timeInfected = 0;
             });
+            
+            simulatedDate = new Date();
+
+            updateTimer();
 
             setVariables();
             updateConsole();
             drawCircles();
             drawAirports();
-            pauseTime();
+            pauseTime();            
 
-            simulatedDate = new Date();
+            // Garantindo que ambos os botões estejam no estado normal após reset
+            isAddingAirport = false;
+            isRemovingAirport = false;
+            const addPlaneButton = document.getElementById('airplaneButton');
+            addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
+            addPlaneButton.style.backgroundColor = "";
+            
+            const removeAirportButton = document.getElementById('removeAirportButton');
+            removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
+            removeAirportButton.style.backgroundColor = "";
         }
-
     </script>
 </body>
-
 </html>
