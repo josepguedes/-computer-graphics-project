@@ -60,6 +60,11 @@
             </button>
 
             <h3 id="planesTitle">Aviões</h3>
+            <div class="setting-item">
+                <label for="planeNumber">Quantidade de aviões:</label>
+                <input type="range" id="planeNumber" min="1" max="10" step="1" value="3" onchange="updatePlanes(value)">
+                <span id="planeNumberLabel">3</span>
+            </div>    
             <div id="airportControls">
                 <button id="airplaneButton" class="add-airport-button" onclick="toggleAddPlaneMode()">
                     &nbsp;<i id="planeIcon" class="fas fa-plane"></i>&nbsp;Adicionar Aeroporto
@@ -175,7 +180,7 @@
 
             currentAirportIndex = 0;
 
-            planeSpeed = 1;
+            planeSpeed = 0;
 
             isAddingAirport = false;
             isRemovingAirport = false;
@@ -289,6 +294,36 @@
 
             // Continue animation loop
             requestAnimationFrame(animate);
+        }
+
+        function updatePlanes(newPlaneCount) {
+            const currentPlaneCount = planes.length;
+            newPlaneCount = parseInt(newPlaneCount);
+
+            if (newPlaneCount > currentPlaneCount) {
+                // Adicionar mais aviões
+                for (let i = currentPlaneCount; i < newPlaneCount; i++) {
+                    // Escolha dois aeroportos aleatórios para o avião inicial e destino
+                    const startAirportIndex = Math.floor(Math.random() * airports.length);
+                    let nextAirportIndex;
+                    do {
+                        nextAirportIndex = Math.floor(Math.random() * airports.length);
+                    } while (nextAirportIndex === startAirportIndex);
+
+                    planes.push({
+                        x: airports[startAirportIndex].x,
+                        y: airports[startAirportIndex].y,
+                        currentAirportIndex: startAirportIndex,
+                        nextAirportIndex: nextAirportIndex,
+                    });
+                }
+            } else if (newPlaneCount < currentPlaneCount) {
+                // Remover aviões excedentes
+                planes.splice(newPlaneCount);
+            }
+
+            document.getElementById('planeNumber').value = planes.length; // Atualiza o valor no input planeNumberLabel
+            document.getElementById('planeNumberLabel').textContent = planes.length; // Atualiza o valor no label planeNumberLabel
         }
 
         function toggleAddPlaneMode() {
@@ -416,6 +451,27 @@
             });
 
             if (airportIndex !== -1) {
+                // Verificar se algum avião está indo para o aeroporto que será removido
+                const planesTargetingAirport = planes.some(plane =>
+                    plane.currentAirportIndex === airportIndex || plane.nextAirportIndex === airportIndex
+                );
+
+                if (planesTargetingAirport) {
+                    alert("Não pode remover um aeroporto que tem um avião indo para ele");
+                    return;
+                }
+
+                // Atualizar índices dos aviões para evitar inconsistências
+                planes.forEach(plane => {
+                    if (plane.currentAirportIndex > airportIndex) {
+                        plane.currentAirportIndex -= 1;
+                    }
+                    if (plane.nextAirportIndex > airportIndex) {
+                        plane.nextAirportIndex -= 1;
+                    }
+                });
+
+                // Remover o aeroporto
                 airports.splice(airportIndex, 1);
                 path.splice(airportIndex, 1);
                 drawAirports();
@@ -601,7 +657,6 @@
         function updateDeathChance(value) {
             deathChance = parseFloat(value) / 100;
 
-            // Garantir que a soma de deathChance e cureChance não ultrapasse 100%
             const remainingPercentage = 1 - deathChance;
             if (cureChance > remainingPercentage) {
                 cureChance = remainingPercentage;

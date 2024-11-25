@@ -30,7 +30,7 @@ canvas {
     height: 100%;
     background-color: rgba(0 0 0 / 60%);
     transition: left 0.5s ease;
-    padding: 0.5vh 1.5vw 1.5vh 1.5vw;
+    padding: 0 1.5vw 1.5vh 1.5vw;
     box-sizing: border-box;
     z-index: 100;
 }
@@ -110,13 +110,13 @@ canvas {
 #console, #settings {
     color: white;
     font-family: Arial, sans-serif;
-    font-size: 1.1vw;
+    font-size: 1vw;
     user-select: none;
 }
 
 #consoleTitle, #probabilitiesTitle, #timeSettingsTitle, #planesTitle{
-    font-size: 1.5vw;
-    margin: 1.5vh 0 1.5vh 0;
+    font-size: 1.4vw;
+    margin: 1.5vh 0 1vh 0;
     font-weight:800;
 }
 
@@ -126,7 +126,7 @@ canvas {
 
 input[type="range"] {
     width: 80%; /* Ajuste dinâmico do tamanho */
-    margin-top: 2.5vh;
+    margin-top: 1.8vh;
     margin-bottom: 1vh; /* Adiciona uma margem superior para os inputs */
     -webkit-appearance: none;
     appearance: none;
@@ -219,7 +219,7 @@ input[type="range"]::-webkit-slider-thumb {
     justify-content: space-between; /* Espaço uniforme entre os botões */
     align-items: center;
     width: 100%; /* O container ocupa toda a largura disponível */
-    margin-top: 1vh; /* Margem superior para separação */
+    margin-top: 3vh; /* Margem superior para separação */
     gap: 0.5vw; /* Espaço entre os botões */
 }
 
