@@ -137,7 +137,7 @@
             dead: { color: "black" }
         };
 
-        let airports = [], infectionIntervals = [], path = [];
+        let airports = [], infectionIntervals = [], path = [], planes = [];
 
 
         function setVariables(){
@@ -162,6 +162,12 @@
                 { x: 520, y: 380, color: 'green' }, 
                 { x: 770, y: 450, color: 'yellow' },
                 { x: 770, y: 150, color: 'black' } 
+            ];
+
+            planes = [
+                { x: airports[0].x, y: airports[0].y, currentAirportIndex: 0, nextAirportIndex: 1 },
+                { x: airports[1].x, y: airports[1].y, currentAirportIndex: 1, nextAirportIndex: 2 },
+                { x: airports[2].x, y: airports[2].y, currentAirportIndex: 2, nextAirportIndex: 0 }
             ];
 
             planeX = airports[0].x; 
@@ -199,16 +205,6 @@
 
         initializeCircles();
 
-        for (let i = 0; i < airports.length; i++) {
-            path.push(airports[i]);
-        }
-
-        for (let i = airports.length - 2; i > 0; i--) {
-            path.push(airports[i]);
-        }
-
-        let nextAirportIndex = 1;
-
         function drawAirports() {
             airports.forEach(airport => {
                 ctx.beginPath();
@@ -232,65 +228,68 @@
             updateConsole();
         }
 
-        function movePlane() {
-            const plane = new Image();
-            plane.src = './plane.png';
-            const scale = 0.1;
+        function animate() {
+            // Clear canvas
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            plane.onload = function () {
+            // Draw background elements
+            drawCircles();
+            drawAirports();
+
+            // Update each plane
+            planes.forEach((planeObj) => {
+                const currentAirport = airports[planeObj.currentAirportIndex];
+                const nextAirport = airports[planeObj.nextAirportIndex];
+
+                // Calculate movement vector
+                const dx = nextAirport.x - planeObj.x;
+                const dy = nextAirport.y - planeObj.y;
+                const distance = Math.sqrt(dx * dx + dy * dy);
+
+                // Avoid division by zero
+                if (distance < planeSpeed) {
+                    // Plane reached the destination
+                    planeObj.currentAirportIndex = planeObj.nextAirportIndex;
+                    planeObj.nextAirportIndex = Math.floor(Math.random() * airports.length);
+                    return;
+                }
+
+                // Calculate step size based on distance
+                const stepX = (dx / distance) * planeSpeed;
+                const stepY = (dy / distance) * planeSpeed;
+
+                // Update plane position
+                planeObj.x += stepX;
+                planeObj.y += stepY;
+
+                // Draw plane with rotation
+                ctx.save();
+                const angle = Math.atan2(dy, dx);
+
+                // Handle direction and rotation
+                if (dx < 0) {
+                    ctx.translate(planeObj.x, planeObj.y);
+                    ctx.rotate(angle + Math.PI);
+                    ctx.scale(-1, 1);
+                } else {
+                    ctx.translate(planeObj.x, planeObj.y);
+                    ctx.rotate(angle);
+                }
+
+                // Draw plane sprite
+                const plane = new Image();
+                plane.src = './plane.png';
+                const scale = 0.07;
+
                 const planeWidth = plane.width * scale;
                 const planeHeight = plane.height * scale;
+                ctx.drawImage(plane, -planeWidth / 2, -planeHeight / 2, planeWidth, planeHeight);
+                ctx.restore();
+            });
 
-                function animate() {
-                    ctx.clearRect(0, 0, canvas.width, canvas.height);
-                    drawCircles();
-                    drawAirports();
-
-                    let dx = 0;
-                    let dy = 0;
-                    if (timeMultiplier > 0) {
-                        const nextAirport = path[nextAirportIndex];
-                        dx = nextAirport.x - planeX;
-                        dy = nextAirport.y - planeY;
-                        const distance = Math.sqrt(dx * dx + dy * dy);
-
-                        const stepX = (dx / distance) * planeSpeed;
-                        const stepY = (dy / distance) * planeSpeed;
-
-                        planeX += stepX;
-                        planeY += stepY;
-
-                        if (distance <= planeSpeed) {
-                            currentAirportIndex = nextAirportIndex;
-                            nextAirportIndex = (nextAirportIndex + 1) % path.length;
-                        }
-                    }
-
-                    ctx.save();
-                    const angle = Math.atan2(dy, dx);
-
-                    if (dx < 0) {
-                        ctx.translate(planeX, planeY);
-                        ctx.rotate(angle + Math.PI);
-                        ctx.scale(-1, 1); 
-                    } else {
-                        ctx.translate(planeX, planeY);
-                        ctx.rotate(angle);
-                    }
-
-                    const planeWidth = plane.width * scale;
-                    const planeHeight = plane.height * scale;
-
-                    ctx.drawImage(plane, -planeWidth / 2, -planeHeight / 2, planeWidth, planeHeight);
-                    ctx.restore();
-
-                    requestAnimationFrame(animate);
-                }
-                animate();
-            };
+            // Continue animation loop
+            requestAnimationFrame(animate);
         }
-
-        movePlane();
 
         function toggleAddPlaneMode() {
             // Desativa o modo de remover aeroporto se estiver ativo
@@ -581,6 +580,8 @@
             drawCircles();
             drawAirports();
             timeMultiplier = 0;
+
+            animate();
         };
 
         function updateCureChance(value) {
