@@ -522,8 +522,6 @@
             }
         }
 
-        attemptToCureOrKill();
-
         function propagateInfection(originCircle) {
             if (originCircle.state !== 'infected' || !isInfecting) return;
 
@@ -542,6 +540,46 @@
                 }
             });
         }
+
+        // let isInfectingActive = false;
+
+        // function propagateInfection(originCircle) {
+        //     if (originCircle.state !== 'infected' || !isInfecting || isInfectingActive) return;
+
+        //     // Define que a infecção está ativa
+        //     isInfectingActive = true;
+
+        //     // Loop através dos círculos para propagar a infecção
+        //     circles.forEach(circle => {
+        //         if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius)) {
+        //             // Evitar propagação para círculos que já estão sendo infectados
+        //             if (!infectionIntervals.some(interval => interval.circle === circle)) {
+        //                 // Cria um intervalo para tentar infectar o círculo
+        //                 const infectionInterval = setInterval(() => {
+        //                     if (parseFloat((Math.random() * 0.9 + 0.1).toFixed(2)) < infectionChance) {
+        //                         infectCircle(circle);
+        //                         propagateInfection(circle);  // Propaga a infecção para vizinhos
+
+        //                         // Após infectar, limpa o intervalo e remove da lista de intervalos
+        //                         clearInterval(infectionInterval);
+        //                         infectionIntervals = infectionIntervals.filter(id => id !== infectionInterval);
+        //                     }
+        //                 }, infectionDelay / timeMultiplier);
+
+        //                 // Armazena o intervalo para que não sejam criados múltiplos para o mesmo círculo
+        //                 infectionIntervals.push({
+        //                     interval: infectionInterval,
+        //                     circle: circle
+        //                 });
+        //             }
+        //         }
+        //     });
+
+        //     // Após a propagação, reseta o estado de 'isInfectingActive'
+        //     setTimeout(() => {
+        //         isInfectingActive = false;
+        //     }, infectionDelay / timeMultiplier);  // Atraso controlado por timeMultiplier
+        // }
 
         function isNeighbor(circle1, circle2, baseDistance) {
             const dx = circle1.x - circle2.x;
@@ -575,7 +613,6 @@
                 });
             }
 
-            setTimeout(attemptToCureOrKill, 1500 / (timeMultiplier || 1));
         }
 
         function updateConsole() {
@@ -710,6 +747,14 @@
             const removeAirportButton = document.getElementById('removeAirportButton');
             removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
             removeAirportButton.style.backgroundColor = "";
+        }
+
+        setInterval(mainLoop, 1000 / timeMultiplier);
+
+        function mainLoop() {
+            if(timeMultiplier != 0) {
+                attemptToCureOrKill();
+            }
         }
     </script>
 </body>
