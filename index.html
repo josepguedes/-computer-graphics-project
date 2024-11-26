@@ -669,6 +669,7 @@
 
         function updateInfectionChance(value) {
             infectionChance = parseFloat(value) / 100;
+            if(value > 80) infectionChance = 0.8
             document.getElementById('infectionChanceLabel').textContent = `${value}%`;
         }
 
