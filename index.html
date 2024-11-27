@@ -45,12 +45,12 @@
                 <h3 id="timeSettingsTitle">Tempo</h3>
                 <div class="setting-item">
                     <label for="infectTime">Tempo para começar a Infecção:</label>
-                    <input type="range" id="infectTime" min="1" max="15" step="0.5" value="5" onchange="updateinfectTime(value)">
-                    <span id="infectionTimeLabel">5s</span>
+                    <input type="range" id="infectTime" min="1" max="15" step="0.5" value="4" oninput="updateinfectTime(value)">
+                    <span id="infectionTimeLabel">4s</span>
                 </div>                
                 <div class="setting-item">
                     <label for="cureTimer">Tempo para começar a Morte/Cura:</label>
-                    <input type="range" id="deathCureTime" min="1" max="60" step="0.5" value="40" onchange="updatedeathCureTime(value)">
+                    <input type="range" id="deathCureTime" min="1" max="100" step="0.5" value="40" oninput="updatedeathCureTime(value)">
                     <span id="deathCureTimeLabel">40s</span>
                 </div>
             </div>
@@ -62,7 +62,7 @@
             <h3 id="planesTitle">Aviões</h3>
             <div class="setting-item">
                 <label for="planeNumber">Quantidade de aviões:</label>
-                <input type="range" id="planeNumber" min="1" max="10" step="1" value="3" onchange="updatePlanes(value)">
+                <input type="range" id="planeNumber" min="1" max="10" step="1" value="3" oninput="updatePlanes(value)">
                 <span id="planeNumberLabel">3</span>
             </div>    
             <div id="airportControls">
@@ -139,27 +139,24 @@
             normal: { color: "white" },
             infected: { color: "red" },
             cured: { color: "orange" },
-            dead: { color: "black" }
+            dead: { color: "black" },
         };
 
-        let airports = [], infectionIntervals = [], path = [], planes = [];
+        let airports = [], path = [], planes = [];
 
 
         function setVariables(){
-            infectionChance = 0.4;
-            infectionDelay = 5000;
+            infectionChance = 0.5;
+            infectionDelay = 4000;
 
             cureChance = 0.2;
             deathChance = 0.05;
 
-            cureAndDeathDelay = 40000;
+            cureAndDeathDelay = 60000;
 
             timeMultiplier = 1;
 
             isInfecting = false;
-            
-            infectionIntervals.forEach(intervalId => clearInterval(intervalId));
-            infectionIntervals = [];
 
             airports = [
                 { x: 390, y: 350, color: 'red' },   
@@ -189,15 +186,15 @@
             document.getElementById('deathChance').value = `${deathChance * 100}`;
             document.getElementById('cureChance').value = `${cureChance * 100}`;
 
-            document.getElementById('infectTime').value = 5;
-            document.getElementById('deathCureTime').value = 40;
+            document.getElementById('infectTime').value = `${infectionDelay / 1000}`;
+            document.getElementById('deathCureTime').value = `${cureAndDeathDelay / 1000}`;
             
             document.getElementById('infectionChanceLabel').textContent = `${infectionChance * 100}%`;
             document.getElementById('deathChanceLabel').textContent = `${deathChance * 100}%`;
             document.getElementById('cureChanceLabel').textContent = `${cureChance * 100}%`;
 
-            document.getElementById('infectionTimeLabel').textContent = `5s`;
-            document.getElementById('deathCureTimeLabel').textContent = `40s`;
+            document.getElementById('infectionTimeLabel').textContent = `${infectionDelay / 1000}s`;
+            document.getElementById('deathCureTimeLabel').textContent = `${cureAndDeathDelay / 1000}s`;
         }
 
         setVariables();
@@ -205,6 +202,7 @@
         function initializeCircles() {
             circles.forEach(circle => {
                 circle.timeInfected = 0;
+                circle.asInfected = false;
             });
         }
 
@@ -236,8 +234,6 @@
         function animate() {
             // Clear canvas
             ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-            // Draw background elements
             drawCircles();
             drawAirports();
 
@@ -518,68 +514,23 @@
         function infectCircle(circle) {
             if (circle.state === 'normal') {
                 circle.state = 'infected';
-                drawCircles();
             }
         }
 
         function propagateInfection(originCircle) {
-            if (originCircle.state !== 'infected' || !isInfecting) return;
-
-            if (timeMultiplier != 0) circles.forEach(circle => {
-                if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius) && timeMultiplier != 0) {
-                    const infectionInterval = setInterval(() => {
-                        if (parseFloat((Math.random() * 0.9 + 0.1).toFixed(2)) < infectionChance) {
-                            infectCircle(circle);
-                            propagateInfection(circle);
-                            clearInterval(infectionInterval);
-                            infectionIntervals = infectionIntervals.filter(id => id !== infectionInterval);
-                        }
-                    }, infectionDelay / timeMultiplier);
-
-                    infectionIntervals.push(infectionInterval);
-                }
-            });
+            if (timeMultiplier != 0 && isInfecting) {
+                circles.forEach(circle => {
+                    if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius) && timeMultiplier != 0 && circle.asInfected === false) {
+                        
+                        setInterval(() => {
+                            if (parseFloat((Math.random() * 0.9 + 0.1).toFixed(2)) < infectionChance) {
+                                infectCircle(circle);
+                            }
+                        }, infectionDelay / timeMultiplier);
+                    }
+                });
+            }
         }
-
-        // let isInfectingActive = false;
-
-        // function propagateInfection(originCircle) {
-        //     if (originCircle.state !== 'infected' || !isInfecting || isInfectingActive) return;
-
-        //     // Define que a infecção está ativa
-        //     isInfectingActive = true;
-
-        //     // Loop através dos círculos para propagar a infecção
-        //     circles.forEach(circle => {
-        //         if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius)) {
-        //             // Evitar propagação para círculos que já estão sendo infectados
-        //             if (!infectionIntervals.some(interval => interval.circle === circle)) {
-        //                 // Cria um intervalo para tentar infectar o círculo
-        //                 const infectionInterval = setInterval(() => {
-        //                     if (parseFloat((Math.random() * 0.9 + 0.1).toFixed(2)) < infectionChance) {
-        //                         infectCircle(circle);
-        //                         propagateInfection(circle);  // Propaga a infecção para vizinhos
-
-        //                         // Após infectar, limpa o intervalo e remove da lista de intervalos
-        //                         clearInterval(infectionInterval);
-        //                         infectionIntervals = infectionIntervals.filter(id => id !== infectionInterval);
-        //                     }
-        //                 }, infectionDelay / timeMultiplier);
-
-        //                 // Armazena o intervalo para que não sejam criados múltiplos para o mesmo círculo
-        //                 infectionIntervals.push({
-        //                     interval: infectionInterval,
-        //                     circle: circle
-        //                 });
-        //             }
-        //         }
-        //     });
-
-        //     // Após a propagação, reseta o estado de 'isInfectingActive'
-        //     setTimeout(() => {
-        //         isInfectingActive = false;
-        //     }, infectionDelay / timeMultiplier);  // Atraso controlado por timeMultiplier
-        // }
 
         function isNeighbor(circle1, circle2, baseDistance) {
             const dx = circle1.x - circle2.x;
@@ -591,23 +542,17 @@
         function attemptToCureOrKill() {
             if (timeMultiplier != 0) {
                 circles.forEach(circle => {
-                    if (circle.state === 'infected') {
-                        circle.timeInfected += 1000 * (timeMultiplier || 1);
+                    if (circle.state === 'infected' && circle.asInfected === true) {
+                        circle.timeInfected += 800 * (timeMultiplier || 1);
 
                         if (circle.timeInfected >= cureAndDeathDelay) {
                             const random = Math.random(); // Gera um valor entre 0 e 1
 
-                            // Define os intervalos baseados nas chances
-                            const deathThreshold = deathChance; // Exemplo: 0.08
-                            const cureThreshold = deathThreshold + cureChance; // Exemplo: 0.08 + 0.2 = 0.28
-
-                            if (random <= deathThreshold) {
+                            if (random <= deathChance) {
                                 circle.state = 'dead'; // 8% de chance
-                            } else if (random <= cureThreshold) {
+                            } else if (random <= cureChance) {
                                 circle.state = 'cured'; // 20% de chance
                             }
-
-                            drawCircles(); // Atualiza a exibição
                         }
                     }
                 });
@@ -706,7 +651,6 @@
 
         function updateInfectionChance(value) {
             infectionChance = parseFloat(value) / 100;
-            if(value > 80) infectionChance = 0.8
             document.getElementById('infectionChanceLabel').textContent = `${value}%`;
         }
 
@@ -725,6 +669,7 @@
             circles.forEach(circle => {
                 circle.state = 'normal';
                 circle.timeInfected = 0;
+                circle.asInfected = false;
             });
             
             simulatedDate = new Date();
@@ -733,7 +678,6 @@
 
             setVariables();
             updateConsole();
-            drawCircles();
             drawAirports();
             pauseTime();            
 
@@ -754,6 +698,13 @@
         function mainLoop() {
             if(timeMultiplier != 0) {
                 attemptToCureOrKill();
+            
+                circles.forEach(circle => {
+                    if (circle.state === 'infected' && circle.asInfected === false) {
+                        propagateInfection(circle);
+                        circle.asInfected = true;
+                    }
+                });
             }
         }
     </script>

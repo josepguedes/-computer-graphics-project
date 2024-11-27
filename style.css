@@ -338,4 +338,4 @@ input[type="range"]::-webkit-slider-thumb {
     border-radius: 50%; /* Faz o elemento ficar redondo */
     margin-right: 0.5vw; /* Espaçamento entre o círculo e o texto */
     flex-shrink: 0; /* Garante que o círculo não se deforme */
-}
+}   
