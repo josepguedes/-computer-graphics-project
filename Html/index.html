@@ -129,6 +129,11 @@
         }
     }
 
+    let CircleStates = {
+            normal: { color: "white" },
+            infected: { color: "red" },
+        };
+
     let infectedCircles = [
         { x: 204, y: 180, state: 'infected' },
         { x: 198, y: 180, state: 'infected' },
@@ -242,20 +247,23 @@
         { x: 726, y: 162, state: 'infected' },
     ];
 
+    function alredyInfected() {
+        circles.forEach(circle => {
+            infectedCircles.forEach(infectedCircle => {
+                // Verificar se o círculo de "circles" é igual ao círculo de "infectedCircles"
+                if (circle.x === infectedCircle.x && circle.y === infectedCircle.y) {
+                    circle.state = 'infected';  // Mudar o estado para 'infected'
+                }
+            });
+        });
+    }
+
     let radius = 2.5;
 
     function drawCircles() {
         ctx.clearRect(0, 0, canvas.width, canvas.height);
         circles.forEach(circle => {
-            ctx.fillStyle = "white";
-            ctx.beginPath();
-            ctx.arc(circle.x, circle.y, radius, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.closePath();
-        });
-
-        infectedCircles.forEach(circle => {
-            ctx.fillStyle = "red";
+            ctx.fillStyle = CircleStates[circle.state].color;
             ctx.beginPath();
             ctx.arc(circle.x, circle.y, radius, 0, Math.PI * 2);
             ctx.fill();
@@ -263,10 +271,37 @@
         });
     }
 
+    // Propagação entre círculos vizinhos
+    function propagateInfection(originCircle) {
+        circles.forEach(circle => {
+            if (circle.state === 'normal' && isNeighbor(originCircle, circle, 9)) {
+                setTimeout(() => {
+                    if (Math.random() < 0.5) {
+                        infectCircle(circle);
+                    }
+                }, 1000);
+            }
+        });
+    }
+
+    function isNeighbor(circle1, circle2, baseDistance) {
+        const dx = circle1.x - circle2.x;
+        const dy = circle1.y - circle2.y;
+        const distance = baseDistance + (Math.random() * 5 - 2.5);
+        return Math.sqrt(dx * dx + dy * dy) <= distance;
+    }
+
+    function infectCircle(circle) {
+        if (circle.state === 'normal') {
+            circle.state = 'infected';
+        }
+    }
+
     window.onload = function () {
         drawCircles();
         drawAirports();
         animate();
+        alredyInfected();
     };
 
     function animate() {
@@ -276,5 +311,18 @@
         drawPlanes();
         requestAnimationFrame(animate);
     }
+
+    setInterval(mainLoop, 1500);
+
+    function mainLoop() {
+
+        circles.forEach(circle => {
+            if (circle.state === 'infected') {
+                if(Math.random() < 0.5) propagateInfection(circle);
+            }
+        });
+
+    }
+    
 </script>
 </html>
