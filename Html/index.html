@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="../Css/style.css">
+    <title>Document</title>
+</head>
+<body>
+    <div id="startMenu" class="start-menu">
+        <h1 class="menu-title">Simulador de Infecção</h1>
+        <p class="menu-description">Controle as probabilidades, observe a propagação e expeerimente todas as funcionalidades</p>
+        <div class="menu-buttons">
+            <button onclick="startGame()" class="start-button">Iniciar Simulação</button>
+            <button onclick="showInstructions()" class="info-button">Como Jogar</button>
+        </div>
+    </div>
+
+    <canvas id="Canvas" width="1024" height="580"></canvas>    
+
+    <script src="../Js/list.js"></script>
+</body>
+<script>
+
+    function startGame() {
+        const startMenu = document.getElementById('startMenu');
+
+        startMenu.style.transition = 'transform 1s ease, opacity 1s ease';
+        startMenu.style.transform = 'scale(0.8)';
+        startMenu.style.opacity = '0';
+
+        setTimeout(() => {
+            window.location.href = '../Html/simulation.html';
+        }, 1000);
+    }
+
+    function showInstructions() {
+        alert('Como Jogar:\n1. Ajuste as probabilidades e configurações no menu lateral.\n2. Clique no mapa para adicionar infecções ou cure pessoas.\n3. Controle o tempo com os botões no canto superior direito.\n4. Monitore o progresso no console.');
+    }
+
+    const canvas = document.getElementById('Canvas');
+    const ctx = canvas.getContext('2d');
+
+    let airports = [
+        { x: 390, y: 350, color: 'black' },   
+        { x: 480, y: 200, color: 'black' },  
+        { x: 520, y: 380, color: 'black' }, 
+        { x: 770, y: 450, color: 'black' },
+        { x: 770, y: 150, color: 'black' } 
+    ];
+
+    let planes = [
+        { x: airports[0].x, y: airports[0].y, currentAirportIndex: 0, nextAirportIndex: 1 },
+        { x: airports[1].x, y: airports[1].y, currentAirportIndex: 1, nextAirportIndex: 2 },
+        { x: airports[2].x, y: airports[2].y, currentAirportIndex: 2, nextAirportIndex: 0 }
+    ];
+
+    let planeX = airports[0].x; 
+    let planeY = airports[0].y;
+
+    let currentAirportIndex = 0;
+    let planeSpeed = 2;
+
+    function drawAirports() {
+        airports.forEach(airport => {
+            ctx.beginPath();
+            ctx.arc(airport.x, airport.y, 7, 0, Math.PI * 2);
+            ctx.fillStyle = airport.color;
+            ctx.fill();
+            ctx.closePath();
+        });
+    }
+
+    function drawPlanes() {
+        planes.forEach((planeObj) => {
+            const currentAirport = airports[planeObj.currentAirportIndex];
+            const nextAirport = airports[planeObj.nextAirportIndex];
+            const dx = nextAirport.x - planeObj.x;
+            const dy = nextAirport.y - planeObj.y;
+            const distance = Math.sqrt(dx * dx + dy * dy);
+            if (distance < planeSpeed) {
+                planeObj.currentAirportIndex = planeObj.nextAirportIndex;
+                planeObj.nextAirportIndex = Math.floor(Math.random() * airports.length);
+                return;
+            }
+            const stepX = (dx / distance) * planeSpeed;
+            const stepY = (dy / distance) * planeSpeed;
+            planeObj.x += stepX;
+            planeObj.y += stepY;
+            ctx.save();
+            const angle = Math.atan2(dy, dx);
+            if (dx < 0) {
+                ctx.translate(planeObj.x, planeObj.y);
+                ctx.rotate(angle + Math.PI);
+                ctx.scale(-1, 1);
+            } else {
+                ctx.translate(planeObj.x, planeObj.y);
+                ctx.rotate(angle);
+            }
+            const plane = new Image();
+            plane.src = '../Assets/plane.png';
+            const scale = 0.07;
+            const planeWidth = plane.width * scale;
+            const planeHeight = plane.height * scale;
+            ctx.drawImage(plane, -planeWidth / 2, -planeHeight / 2, planeWidth, planeHeight);
+            ctx.restore();
+        });
+    }
+
+    function updatePlanes(newPlaneCount) {
+        const currentPlaneCount = planes.length;
+        newPlaneCount = parseInt(newPlaneCount);
+        if (newPlaneCount > currentPlaneCount) {
+            for (let i = currentPlaneCount; i < newPlaneCount; i++) {
+                const startAirportIndex = Math.floor(Math.random() * airports.length);
+                let nextAirportIndex;
+                do {
+                    nextAirportIndex = Math.floor(Math.random() * airports.length);
+                } while (nextAirportIndex === startAirportIndex);
+                planes.push({
+                    x: airports[startAirportIndex].x,
+                    y: airports[startAirportIndex].y,
+                    currentAirportIndex: startAirportIndex,
+                    nextAirportIndex: nextAirportIndex,
+                });
+            }
+        } else if (newPlaneCount < currentPlaneCount) {
+            planes.splice(newPlaneCount);
+        }
+    }
+
+    let infectedCircles = [
+        { x: 204, y: 180, state: 'infected' },
+        { x: 198, y: 180, state: 'infected' },
+        { x: 198, y: 174, state: 'infected' },
+        { x: 204, y: 174, state: 'infected' },
+        { x: 210, y: 174, state: 'infected' },
+        { x: 222, y: 174, state: 'infected' },
+        { x: 216, y: 180, state: 'infected' },
+        { x: 216, y: 174, state: 'infected' },
+        { x: 210, y: 180, state: 'infected' },
+        { x: 222, y: 180, state: 'infected' },
+        { x: 210, y: 186, state: 'infected' },
+        { x: 204, y: 186, state: 'infected' },
+        { x: 204, y: 192, state: 'infected' },
+        { x: 210, y: 192, state: 'infected' },
+        { x: 216, y: 186, state: 'infected' },
+        { x: 228, y: 180, state: 'infected' },
+        { x: 228, y: 174, state: 'infected' },
+        { x: 222, y: 168, state: 'infected' },
+        { x: 216, y: 168, state: 'infected' },
+        { x: 204, y: 168, state: 'infected' },
+        { x: 210, y: 168, state: 'infected' },
+        { x: 198, y: 168, state: 'infected' },
+        { x: 192, y: 168, state: 'infected' },
+        { x: 192, y: 174, state: 'infected' },
+        { x: 186, y: 174, state: 'infected' },
+        { x: 180, y: 180, state: 'infected' },
+        { x: 186, y: 180, state: 'infected' },
+        { x: 192, y: 180, state: 'infected' },
+        { x: 192, y: 186, state: 'infected' },
+        { x: 198, y: 186, state: 'infected' },
+        { x: 186, y: 192, state: 'infected' },
+        { x: 192, y: 192, state: 'infected' },
+        { x: 198, y: 192, state: 'infected' },
+        { x: 186, y: 186, state: 'infected' },
+        { x: 180, y: 186, state: 'infected' },
+        { x: 180, y: 174, state: 'infected' },
+        { x: 180, y: 168, state: 'infected' },
+        { x: 186, y: 162, state: 'infected' },
+        { x: 186, y: 168, state: 'infected' },
+        { x: 198, y: 162, state: 'infected' },
+        { x: 192, y: 162, state: 'infected' },
+        { x: 204, y: 162, state: 'infected' },
+        { x: 210, y: 156, state: 'infected' },
+        { x: 204, y: 156, state: 'infected' },
+        { x: 216, y: 150, state: 'infected' },
+        { x: 198, y: 156, state: 'infected' },
+        { x: 174, y: 168, state: 'infected' },
+        { x: 174, y: 174, state: 'infected' },
+        { x: 168, y: 180, state: 'infected' },
+        { x: 168, y: 174, state: 'infected' },
+        { x: 174, y: 180, state: 'infected' },
+        { x: 174, y: 186, state: 'infected' },
+        { x: 174, y: 192, state: 'infected' },
+        { x: 180, y: 192, state: 'infected' },
+        { x: 186, y: 198, state: 'infected' },
+        { x: 198, y: 198, state: 'infected' },
+        { x: 204, y: 198, state: 'infected' },
+        { x: 210, y: 198, state: 'infected' },
+        { x: 222, y: 186, state: 'infected' },
+        { x: 216, y: 192, state: 'infected' },
+        { x: 192, y: 198, state: 'infected' },
+        { x: 204, y: 204, state: 'infected' },
+        { x: 198, y: 204, state: 'infected' },
+        { x: 192, y: 204, state: 'infected' },
+        { x: 180, y: 198, state: 'infected' },
+        { x: 180, y: 204, state: 'infected' },
+        { x: 186, y: 204, state: 'infected' },
+        { x: 174, y: 204, state: 'infected' },
+        { x: 228, y: 198, state: 'infected' },
+        { x: 228, y: 192, state: 'infected' },
+        { x: 234, y: 186, state: 'infected' },
+        { x: 210, y: 150, state: 'infected' },
+        { x: 216, y: 156, state: 'infected' },
+        { x: 216, y: 162, state: 'infected' },
+        { x: 222, y: 162, state: 'infected' },
+        { x: 228, y: 150, state: 'infected' },
+        { x: 222, y: 150, state: 'infected' },
+        { x: 222, y: 144, state: 'infected' },
+        { x: 186, y: 150, state: 'infected' },
+        { x: 192, y: 150, state: 'infected' },
+        { x: 192, y: 156, state: 'infected' },
+        { x: 186, y: 156, state: 'infected' },
+        { x: 180, y: 156, state: 'infected' },
+        { x: 318, y: 390, state: 'infected' },
+        { x: 324, y: 390, state: 'infected' },
+        { x: 324, y: 384, state: 'infected' },
+        { x: 318, y: 384, state: 'infected' },
+        { x: 324, y: 378, state: 'infected' },
+        { x: 330, y: 378, state: 'infected' },
+        { x: 330, y: 384, state: 'infected' },
+        { x: 330, y: 372, state: 'infected' },
+        { x: 318, y: 372, state: 'infected' },
+        { x: 324, y: 372, state: 'infected' },
+        { x: 318, y: 378, state: 'infected' },
+        { x: 312, y: 384, state: 'infected' },
+        { x: 312, y: 378, state: 'infected' },
+        { x: 336, y: 402, state: 'infected' },
+        { x: 342, y: 402, state: 'infected' },
+        { x: 348, y: 402, state: 'infected' },
+        { x: 342, y: 408, state: 'infected' },
+        { x: 348, y: 408, state: 'infected' },
+        { x: 714, y: 156, state: 'infected' },
+        { x: 714, y: 150, state: 'infected' },
+        { x: 720, y: 150, state: 'infected' },
+        { x: 720, y: 156, state: 'infected' },
+        { x: 720, y: 144, state: 'infected' },
+        { x: 726, y: 144, state: 'infected' },
+        { x: 726, y: 150, state: 'infected' },
+        { x: 726, y: 156, state: 'infected' },
+        { x: 726, y: 162, state: 'infected' },
+    ];
+
+    let radius = 2.5;
+
+    function drawCircles() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        circles.forEach(circle => {
+            ctx.fillStyle = "white";
+            ctx.beginPath();
+            ctx.arc(circle.x, circle.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.closePath();
+        });
+
+        infectedCircles.forEach(circle => {
+            ctx.fillStyle = "red";
+            ctx.beginPath();
+            ctx.arc(circle.x, circle.y, radius, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.closePath();
+        });
+    }
+
+    window.onload = function () {
+        drawCircles();
+        drawAirports();
+        animate();
+    };
+
+    function animate() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawCircles();
+        drawAirports();
+        drawPlanes();
+        requestAnimationFrame(animate);
+    }
+</script>
+</html>
