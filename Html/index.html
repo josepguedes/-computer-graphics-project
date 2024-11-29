@@ -12,7 +12,6 @@
         <p class="menu-description">Controle as probabilidades, observe a propagação e expeerimente todas as funcionalidades</p>
         <div class="menu-buttons">
             <button onclick="startGame()" class="start-button">Iniciar Simulação</button>
-            <button onclick="showInstructions()" class="info-button">Como Jogar</button>
         </div>
     </div>
 
@@ -32,10 +31,6 @@
         setTimeout(() => {
             window.location.href = '../Html/simulation.html';
         }, 1100);
-    }
-
-    function showInstructions() {
-        alert('Como Jogar:\n1. Ajuste as probabilidades e configurações no menu lateral.\n2. Clique no mapa para adicionar infecções ou cure pessoas.\n3. Controle o tempo com os botões no canto superior direito.\n4. Monitore o progresso no console.');
     }
 
     const canvas = document.getElementById('Canvas');

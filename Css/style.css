@@ -38,7 +38,7 @@
     gap: 1.5vh; /* Espaço entre os botões */
 }
 
-.start-button, .info-button {
+.start-button {
     background: #5cbdff;
     border: none;
     color: white;
@@ -50,7 +50,7 @@
     font-weight: bold;
 }
 
-.start-button:hover, .info-button:hover {
+.start-button:hover {
     background: #489bd3;
     transform: scale(1.05);
 }
@@ -59,20 +59,6 @@
     background: #317aa4;
     transform: scale(0.98);
 }
-
-.info-button:active{
-    background: #cb8400;
-    transform: scale(0.98);
-}
-
-.info-button {
-    background: #ffa500; /* Botão laranja para instruções */
-}
-
-.info-button:hover {
-    background: #e69500;
-}
-
 
 /* Estilos gerais */
 body {
