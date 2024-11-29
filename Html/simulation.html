@@ -292,7 +292,9 @@
 
                     // Check if plane gets infected by the airport
                     if (currentAirport.state === 'infected') {
-                        planeObj.state = 'infected';
+                        if (Math.random() < 0.5) {
+                            planeObj.state = 'infected';
+                        }
                     }
 
                     // New: Check if plane gets cured by the airport (10% chance)
