@@ -10,6 +10,10 @@
 </head>
 
 <body>
+    <div id="notification">
+        <span id="notificationMessage"></span>
+    </div>      
+
     <div id="slideMenu" class="slide-menu">
         <button id="closeButton" onclick="toggleMenu()">
             <i class="fas fa-times"></i>
@@ -109,7 +113,7 @@
         <div class="legend-section">
             <h4>Pessoas</h4>
             <div class="legend-item">
-                <span class="legend-color" style="background-color: white;"></span>
+                <span class="legend-color" style="background-color: white"></span>
                 <span>Pessoas Saudáveis</span>
             </div>
             <div class="legend-item">
@@ -159,8 +163,10 @@
 
         let planeX, planeY, currentAirportIndex, planeSpeed, isAddingAirport, isRemovingAirport;
 
+        let simulatedDate = new Date();
+
         let CircleStates = {
-            normal: { color: "white" },
+            normal: { color: "rgb(133, 175, 68)" },
             infected: { color: "red" },
             cured: { color: "orange" },
             dead: { color: "black" },
@@ -274,6 +280,13 @@
                     if (currentAirport.state === 'infected') {
                         planeObj.state = 'infected';
                     }
+
+                    // New: Check if plane gets cured by the airport (10% chance)
+                    if (currentAirport.state === 'cured' && planeObj.state === 'infected') {
+                        if (Math.random() < 0.1) { // 10% chance to cure the plane
+                            planeObj.state = 'normal'; // Plane is cured
+                        }
+                    }
                 }
 
                 // Calculate step size based on distance
@@ -343,46 +356,7 @@
             document.getElementById('planeNumberLabel').textContent = planes.length;
         }
 
-        function toggleAddPlaneMode() {
-            if (isRemovingAirport) {
-                isRemovingAirport = false;
-                const removeAirportButton = document.getElementById('removeAirportButton');
-                removeAirportButton.style.backgroundColor = "";
-                removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
-            }
-
-            isAddingAirport = !isAddingAirport;
-            const addPlaneButton = document.getElementById('airplaneButton');
-
-            if (isAddingAirport) {
-                addPlaneButton.innerHTML = "<i class='fas fa-times'></i>&nbsp;Cancelar";
-                addPlaneButton.style.backgroundColor = "#da4444";
-            } else {
-                addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
-                addPlaneButton.style.backgroundColor = "";
-            }
-        }
-
-        function toggleRemoveAirportMode() {
-            if (isAddingAirport) {
-                isAddingAirport = false;
-                const addPlaneButton = document.getElementById('airplaneButton');
-                addPlaneButton.style.backgroundColor = "";
-                addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
-            }
-
-            isRemovingAirport = !isRemovingAirport;
-            const removeAirportButton = document.getElementById('removeAirportButton');
-
-            if (isRemovingAirport) {
-                removeAirportButton.innerHTML = "<i class='fas fa-times'></i>&nbsp;Cancelar";
-                removeAirportButton.style.backgroundColor = "#da4444";
-            } else {
-                removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
-                removeAirportButton.style.backgroundColor = "";
-            }
-        }
-
+        // Função para adicionar aeroporto
         function handleAddAirport(event) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -406,10 +380,11 @@
                     toggleAddPlaneMode();
                 }, 50);
             } else {
-                alert("Só pode adicionar aeroportos sobre círculos");
+                showNotification("Só pode adicionar aeroportos sobre círculos");
             }
         }
 
+        // Função para remover aeroporto
         function handleRemoveAirport(event) {
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -430,7 +405,7 @@
                 );
 
                 if (planesTargetingAirport) {
-                    alert("Não pode remover um aeroporto que tem um avião indo para ele");
+                    showNotification("Não pode remover um aeroporto que tem um avião indo para ele");
                     return;
                 }
 
@@ -450,7 +425,7 @@
                     toggleRemoveAirportMode();
                 }, 50);
             } else {
-                alert("Clique em um aeroporto para removê-lo");
+                showNotification("Clique em um aeroporto para removê-lo");
             }
         }
 
@@ -543,7 +518,7 @@
                                 if (Math.random() < 0.5) {
                                     infectCircle(circle);
                                 }
-                            }, infectionDelay / timeMultiplier);
+                            }, infectionDelay / (timeMultiplier || 1));
                         }
                     });
                 }
@@ -555,10 +530,10 @@
             circles.forEach(circle => {
                 if (circle.state === 'normal' && isNeighbor(originCircle, circle, infectionRadius)) {
                     setTimeout(() => {
-                        if (Math.random() < infectionChance) {
+                        if (Math.random() < infectionChance && timeMultiplier != 0) {
                             infectCircle(circle);
                         }
-                    }, infectionDelay / timeMultiplier);
+                    }, infectionDelay / (timeMultiplier || 1));
                 }
             });
         }
@@ -571,7 +546,7 @@
                         if (Math.random() < 0.5) {
                             infectAirport(airport);
                         }
-                    }, infectionDelay / timeMultiplier);
+                    }, infectionDelay / (timeMultiplier || 1));
                 }
             });
         }
@@ -589,7 +564,7 @@
             circles.forEach(circle => {
                 if (circle.state === 'infected' && circle.asInfected === true) {
                     circle.timeInfected -= 800 * (timeMultiplier || 1);
-                    if (circle.timeInfected <= cureAndDeathDelay) {
+                    if (circle.timeInfected <= 0) {
                         const random = Math.random();
                         if (random <= deathChance) {
                             circle.state = 'dead';
@@ -603,9 +578,9 @@
             airports.forEach(airport => {
                 if (airport.state === 'infected' && airport.asInfected === true) {
                     
-                    airport.timeInfected += 800 * (timeMultiplier || 1);
+                    airport.timeInfected -= 800 * (timeMultiplier || 1);
 
-                    if (airport.timeInfected >= cureAndDeathDelay) airport.state = 'cured';
+                    if (airport.timeInfected <= 0) airport.state = 'cured';
                 }
             });
         }
@@ -636,6 +611,46 @@
             }
         }
 
+        function toggleAddPlaneMode() {
+            if (isRemovingAirport) {
+                isRemovingAirport = false;
+                const removeAirportButton = document.getElementById('removeAirportButton');
+                removeAirportButton.style.backgroundColor = "";
+                removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
+            }
+
+            isAddingAirport = !isAddingAirport;
+            const addPlaneButton = document.getElementById('airplaneButton');
+
+            if (isAddingAirport) {
+                addPlaneButton.innerHTML = "<i class='fas fa-times'></i>&nbsp;Cancelar";
+                addPlaneButton.style.backgroundColor = "#da4444";
+            } else {
+                addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
+                addPlaneButton.style.backgroundColor = "";
+            }
+        }
+
+        function toggleRemoveAirportMode() {
+            if (isAddingAirport) {
+                isAddingAirport = false;
+                const addPlaneButton = document.getElementById('airplaneButton');
+                addPlaneButton.style.backgroundColor = "";
+                addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
+            }
+
+            isRemovingAirport = !isRemovingAirport;
+            const removeAirportButton = document.getElementById('removeAirportButton');
+
+            if (isRemovingAirport) {
+                removeAirportButton.innerHTML = "<i class='fas fa-times'></i>&nbsp;Cancelar";
+                removeAirportButton.style.backgroundColor = "#da4444";
+            } else {
+                removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
+                removeAirportButton.style.backgroundColor = "";
+            }
+        }
+
         function updateConsole() {
             const healthy = circles.filter(c => c.state === 'normal').length;
             const infected = circles.filter(c => c.state === 'infected').length;
@@ -647,8 +662,6 @@
             document.getElementById('deadCount').textContent = `Pessoas Mortas: ${(dead / circles.length * 100).toFixed(2)}%`;
             document.getElementById('curedCount').textContent = `Pessoas Curadas: ${(cured / circles.length * 100).toFixed(2)}%`;
         }
-
-        let simulatedDate = new Date();
 
         function updateTimer() {
             if (timeMultiplier > 0) {
@@ -703,6 +716,39 @@
             document.getElementById("deathCureTimeLabel").textContent = `${value}s`;
         }
 
+        let notificationTimeout; // Variável para armazenar o timeout
+
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            const messageElement = document.getElementById('notificationMessage');
+            messageElement.textContent = message;
+
+            // Cancela qualquer timeout ou animação ativos
+            clearTimeout(notificationTimeout);
+
+            // Exibe a notificação imediatamente
+            notification.style.opacity = 1; // Aplica opacidade para visibilidade
+
+            // Reseta qualquer classe de animação
+            notification.classList.remove('fade-out');
+            notification.classList.add('fade-in'); // Aplique a classe de fade-in
+
+            // Oculta após 3 segundos
+            notificationTimeout = setTimeout(() => {
+                closeNotification();
+            }, 3000);
+        }
+
+        function closeNotification() {
+            const notification = document.getElementById('notification');
+            notification.classList.remove('fade-in');
+            notification.classList.add('fade-out'); // Aplica a classe de fade-out
+
+            setTimeout(() => {
+                notification.style.opacity = 0; // Aplica opacidade 0
+            }, 300); // O tempo da animação de fade-out deve ser igual ao tempo da transição
+        }
+
         //Mudar Tempo
 
         function pauseTime() {
@@ -735,37 +781,39 @@
         //Resetar e Função de Clicar
 
         function reset() {
-            circles.forEach(circle => {
-                circle.state = 'normal';
-                circle.timeInfected = 0;
-                circle.asInfected = false;
-            });
+            setTimeout(() => {
+                circles.forEach(circle => {
+                    circle.state = 'normal';
+                    circle.timeInfected = 0;
+                    circle.asInfected = false;
+                });
 
-            airports.forEach(airport => {
-                airport.state = 'normal';
-                airport.timeInfected = 0;
-                airport.asInfected = false;
-            });
+                airports.forEach(airport => {
+                    airport.state = 'normal';
+                    airport.timeInfected = 0;
+                    airport.asInfected = false;
+                });
 
-            simulatedDate = new Date();
+                simulatedDate = new Date();
 
-            updateTimer();
+                updateTimer();
 
-            setVariables();
-            updateConsole();
-            pauseTime();
+                setVariables();
+                updateConsole();
+                pauseTime();
 
-            initializeCirclesAirport();
+                initializeCirclesAirport();
 
-            isAddingAirport = false;
-            isRemovingAirport = false;
-            const addPlaneButton = document.getElementById('airplaneButton');
-            addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
-            addPlaneButton.style.backgroundColor = "";
+                isAddingAirport = false;
+                isRemovingAirport = false;
+                const addPlaneButton = document.getElementById('airplaneButton');
+                addPlaneButton.innerHTML = "<i class='fas fa-plane'></i>&nbsp;Adicionar Aeroporto";
+                addPlaneButton.style.backgroundColor = "";
 
-            const removeAirportButton = document.getElementById('removeAirportButton');
-            removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
-            removeAirportButton.style.backgroundColor = "";
+                const removeAirportButton = document.getElementById('removeAirportButton');
+                removeAirportButton.innerHTML = "<i class='fas fa-minus-circle'></i>&nbsp;Remover Aeroporto";
+                removeAirportButton.style.backgroundColor = "";
+            }, 200);
         }
 
         canvas.addEventListener('click', (event) => {
@@ -800,7 +848,7 @@
             requestAnimationFrame(animate);
         }
 
-        setInterval(mainLoop, 1000 / timeMultiplier);
+        setInterval(mainLoop, 1000 / (timeMultiplier || 1));
 
         function mainLoop() {
             if (timeMultiplier != 0) {

@@ -400,6 +400,7 @@ input[type="range"]::-webkit-slider-thumb {
     align-items: flex-start;
     overflow: hidden; /* Garante que o conteúdo extra não ultrapasse o limite */
     transition: all 0.3s ease-in-out; /* Transição suave em hover */
+    user-select: none;
 }
 
 #legend:hover {
@@ -450,4 +451,60 @@ input[type="range"]::-webkit-slider-thumb {
     font-size: 0.9vw; /* Ajusta o tamanho do texto */
     line-height: 1.2; /* Melhor legibilidade */
     color: white;
+}
+
+/* Estilo do popup de notificação */
+#notification {
+    position: fixed;
+    top: 2vh; /* Mantém o popup no topo, 2% da altura da tela */
+    left: 50%; /* Centraliza horizontalmente */
+    transform: translateX(-50%); /* Ajusta a posição para o centro */
+    background-color: rgba(255, 51, 51, 0.95); /* Fundo vermelho */
+    color: white;
+    padding: 2vh; /* Espaçamento interno maior baseado na altura da tela */
+    border-radius: 1vh; /* Bordas arredondadas em vh para garantir proporcionalidade */
+    font-size: 1vw; /* Tamanho do texto baseado na largura da tela */
+    font-family: Arial, sans-serif;
+    text-align: center; /* Centraliza o texto dentro do popup */
+    opacity: 0; /* Inicialmente invisível */
+    z-index: 9999;
+    width: 20vw; /* Largura do popup com base na largura da tela */
+    box-shadow: 0 1vh 2vh rgba(0, 0, 0, 0.2); /* Sombra suave proporcional à altura */
+    display: flex; /* Ativa flexbox para centralizar conteúdo */
+    align-items: center; /* Centraliza verticalmente o texto */
+    justify-content: center; /* Centraliza horizontalmente o texto */
+    transition: opacity 0.3s ease, visibility 0s 0.3s; /* Controla a visibilidade e opacidade com animação */
+}
+
+/* Animação para mostrar */
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, 5vh); /* Desloca ligeiramente para cima no início */
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, 0); /* Retorna suavemente ao topo */
+    }
+}
+
+/* Animação para esconder */
+@keyframes fadeOut {
+    from {
+        opacity: 1;
+        transform: translate(-50%, 0); /* Posição inicial centralizada */
+    }
+    to {
+        opacity: 0;
+        transform: translate(-50%, -5vh); /* Desloca para cima ao desaparecer */
+    }
+}
+
+/* Estilo para a animação de fade-in e fade-out */
+.fade-in {
+    animation: fadeIn 0.3s ease forwards;
+}
+
+.fade-out {
+    animation: fadeOut 0.3s ease forwards;
 }
