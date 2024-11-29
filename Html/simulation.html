@@ -318,7 +318,7 @@
 
                         // 3. Check if plane gets cured by the airport
                         if (nextAirport.state === 'cured' && planeObj.state === 'infected') {
-                            if (Math.random() < 0.1) { // 10% chance to cure the plane
+                            if (Math.random() < 0.5) { // 10% chance to cure the plane
                                 planeObj.state = 'normal'; // Plane is cured
                             }
                         }
