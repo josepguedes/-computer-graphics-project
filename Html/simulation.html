@@ -262,11 +262,17 @@
                 // Validar coordenadas do avião
                 if (!currentAirport || !nextAirport) {
                     console.warn('Avião com índices inválidos!', planeObj);
-                    planeObj.currentAirportIndex = 0; // Reseta para o primeiro aeroporto
-                    planeObj.nextAirportIndex = 1;
+
+                    // Corrigir índices inválidos
+                    planeObj.currentAirportIndex = 0;
+                    planeObj.nextAirportIndex = Math.floor(Math.random() * airports.length);
+                    planeObj.x = airports[0].x;
+                    planeObj.y = airports[0].y;
+
+                    return; // Sai do loop para evitar mais erros
                 }
 
-                // Reajustar posição do avião caso esteja em (0, 0)
+                // Corrigir posições inválidas
                 if (planeObj.x === 0 && planeObj.y === 0) {
                     planeObj.x = currentAirport.x;
                     planeObj.y = currentAirport.y;
@@ -277,30 +283,44 @@
                 const dy = nextAirport.y - planeObj.y;
                 const distance = Math.sqrt(dx * dx + dy * dy);
 
-                // Avoid division by zero
+                // Plane reached the destination
                 if (distance < planeSpeed) {
-                    // Plane reached the destination
+                    // Move plane to exact position of the next airport
+                    planeObj.x = nextAirport.x;
+                    planeObj.y = nextAirport.y;
+
+                    // Update indices for the plane's journey
                     planeObj.currentAirportIndex = planeObj.nextAirportIndex;
-                    planeObj.nextAirportIndex = Math.floor(Math.random() * airports.length);
 
-                    // Check if plane infects the airport (50% chance)
-                    if (planeObj.state === 'infected' && currentAirport.state === 'normal') {
-                        if (Math.random() < 0.5) { // 50% chance
-                            currentAirport.state = 'infected';
+                    // Ensure next airport is different
+                    let newNextIndex;
+                    do {
+                        newNextIndex = Math.floor(Math.random() * airports.length);
+                    } while (newNextIndex === planeObj.currentAirportIndex);
+
+                    planeObj.nextAirportIndex = newNextIndex;
+
+                    // Actions when plane reaches the airport
+                    if (nextAirport) {
+                        // 1. Check if plane infects the airport
+                        if (planeObj.state === 'infected' && nextAirport.state === 'normal') {
+                            if (Math.random() < 0.5) { // 50% chance
+                                nextAirport.state = 'infected';
+                            }
                         }
-                    }
 
-                    // Check if plane gets infected by the airport
-                    if (currentAirport.state === 'infected') {
-                        if (Math.random() < 0.5) {
-                            planeObj.state = 'infected';
+                        // 2. Check if plane gets infected by the airport
+                        if (nextAirport.state === 'infected' && planeObj.state === 'normal') {
+                            if (Math.random() < 0.5) { // 50% chance
+                                planeObj.state = 'infected';
+                            }
                         }
-                    }
 
-                    // New: Check if plane gets cured by the airport (10% chance)
-                    if (currentAirport.state === 'cured' && planeObj.state === 'infected') {
-                        if (Math.random() < 0.1) { // 10% chance to cure the plane
-                            planeObj.state = 'normal'; // Plane is cured
+                        // 3. Check if plane gets cured by the airport
+                        if (nextAirport.state === 'cured' && planeObj.state === 'infected') {
+                            if (Math.random() < 0.1) { // 10% chance to cure the plane
+                                planeObj.state = 'normal'; // Plane is cured
+                            }
                         }
                     }
                 }
@@ -343,6 +363,7 @@
                 ctx.restore();
             });
         }
+
 
         function updatePlanes(newPlaneCount) {
             const currentPlaneCount = planes.length;
